@@ -5,11 +5,16 @@ import neat
 import os
 import time
 import pickle
-
+import matplotlib.pyplot as plt
 NUM_RUNS = 5
 
 class ForageTask:
     def __init__(self, window, width, height):
+        if window is None:
+            os.environ["SDL_VIDEODRIVER"] = "dummy"  # Use a dummy display to prevent a window from opening
+            pygame.display.init()  # Initialize Pygame without a window
+            window = pygame.Surface((width, height))  # Create an off-screen surface
+
         self.game = Game(window, width, height)
         self.foods = self.game.food_list
         self.agent = self.game.agent
@@ -40,15 +45,19 @@ class ForageTask:
 
             output = net.activate(sensor_inputs)  # NEAT expects a list of inputs
 
-            move_actions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
-            action_index = output.index(max(output[:8]))
+            # move_actions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+            move_actions = ["N", "E", "S", "W"]
+            # action_index = output.index(max(output[:8]))
+            action_index  = output.index(max(output[:4]))
             move_direction = move_actions[action_index] 
-            place_pheromone = output[8] > 0.5
-            movement = output[9] > 0.5
+            # place_pheromone = output[8] > 0.5
+            place_pheromone = output[4] > 0.5
+            # movement = output[9] > 0.5
 
 
-            if movement:
-                self.game.move_agent(move_direction)
+            # if movement:
+            #     self.game.move_agent(move_direction)
+            self.game.move_agent(move_direction)
             if place_pheromone:
                 self.game.place_pheromone()
 
@@ -83,7 +92,7 @@ class ForageTask:
             if draw:
                 self.game.draw(draw_score=False, draw_hits=True)
 
-            # pygame.display.update()
+                pygame.display.update()
 
             # duration = time.time() - start_time
             if self.game.optimalTime <= clock or game_info.food_collected >= game_info.total_food :
@@ -109,18 +118,21 @@ class ForageTask:
         sensor_inputs.append(self.agent.carrying_food) # Append carrying food value
         
         output = net.activate(sensor_inputs)  # NEAT expects a list of inputs
-        move_actions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
-        action_index = output.index(max(output[:8]))
+        # move_actions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        move_actions = ["N", "E", "S", "W"]
+        action_index = output.index(max(output[:4]))
         move_direction = move_actions[action_index] 
-        place_pheromone = output[8] > 0.5
-        movement = output[9] > 0.5
+        # place_pheromone = output[8] > 0.5
+        place_pheromone = output[4] > 0.5
+        # movement = output[9] > 0.5
 
         valid = True
 
-        if movement:
-            valid =self.game.move_agent(move_direction)
+        # if movement:
+        #     valid =self.game.move_agent(move_direction)
+        valid = self.game.move_agent(move_direction)
         # else:
-        #     genome.fitness -= 0.01  # we want to discourage wall hitting
+        #     genome.fitness -= 0.01  # we want to discourage no movement
         if place_pheromone:
             self.game.place_pheromone()
 
@@ -140,7 +152,8 @@ def eval_genomes(genomes, config):
     Run each genome a set number of time to determine the fitness.
     """
     width, height = 700, 500
-    win = pygame.display.set_mode((width, height))
+    draw = False
+    win = None if not draw else pygame.display.set_mode((width, height))
     # pygame.display.set_caption("Forage")
 
     for i, (genome_id, genome) in enumerate(genomes):
@@ -149,26 +162,47 @@ def eval_genomes(genomes, config):
         for run in range(NUM_RUNS):
             forage = ForageTask(win, width, height)
 
-            force_quit = forage.train_ai(genome, config, draw=False)
+            force_quit = forage.train_ai(genome, config, draw)
             
             if force_quit:
                 quit()
         genome.fitness /= NUM_RUNS
-        print(f"Genome {genome_id}:, Fitness: {genome.fitness}")
+        # print(f"Genome {genome_id}:, Fitness: {genome.fitness}")
 
 
 
 def run_neat(config):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
-    p = neat.Population(config)
+    checkpoint_file = 'checkpoints/four_sensor/1999'
+
+    # Resume training if checkpoint exists
+    if os.path.exists(checkpoint_file):
+        print("Resuming from checkpoint...")
+        p = neat.Checkpointer.restore_checkpoint(checkpoint_file)
+    else:
+        print("Starting fresh training...")
+        p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(1))
+    p.add_reporter(neat.Checkpointer(50, None, 'checkpoints/four_sensor/'))
 
-    winner = p.run(eval_genomes, 50)
+    winner = p.run(eval_genomes, 1)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
+
+    best_fitness = stats.get_fitness_stat(max)
+    avg_fitness = stats.get_fitness_mean()
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(best_fitness, label="Best Fitness", color='blue')
+    plt.plot(avg_fitness, label="Average Fitness", color='orange')
+    plt.xlabel("Generation")
+    plt.ylabel("Fitness")
+    plt.legend()
+    plt.title("Fitness Over Generations")
+    plt.grid()
+    plt.show()
 
 
 def test_best_network(config):
@@ -185,7 +219,7 @@ def test_best_network(config):
 
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config.txt')
+    config_path = os.path.join(local_dir, 'config-base')
 
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,

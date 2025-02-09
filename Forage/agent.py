@@ -9,13 +9,15 @@ class Agent:
     def __init__(self, x, y):
         self.x = self.original_x = x
         self.y = self.original_y = y
-        self.sensor_count = 8
-        self.sensor_segments = 8
+        # self.sensor_count = 8
+        self.sensor_count = 4
+        # self.sensor_segments = 8
+        self.sensor_segments = 4
         self.carrying_food = False
         self.radius = 10
         self.sensor_length = 100
         self.color = BLUE
-        self.sensor_count = 8
+       
         self.vel = 4
         self.sensors = [[[0, 0, 0] for _ in range(self.sensor_segments)] for _ in range(self.sensor_count)]
         self.sensor_color = YELLOW
@@ -35,24 +37,24 @@ class Agent:
     def move(self, move_direction):
         if move_direction == "N":
             self.y -= self.vel
-        elif move_direction == "NE":
-            self.x += self.vel*math.cos(math.pi/4)
-            self.y -= self.vel*math.sin(math.pi/4)
+        # elif move_direction == "NE":
+        #     self.x += self.vel*math.cos(math.pi/4)
+        #     self.y -= self.vel*math.sin(math.pi/4)
         elif move_direction == "E":
             self.x += self.vel
-        elif move_direction == "SE":
-            self.x += self.vel*math.cos(math.pi/4)
-            self.y += self.vel*math.sin(math.pi/4)
+        # elif move_direction == "SE":
+        #     self.x += self.vel*math.cos(math.pi/4)
+        #     self.y += self.vel*math.sin(math.pi/4)
         elif move_direction == "S":
             self.y += self.vel
-        elif move_direction == "SW":
-            self.x -= self.vel*math.cos(math.pi/4)
-            self.y += self.vel*math.sin(math.pi/4)
+        # elif move_direction == "SW":
+        #     self.x -= self.vel*math.cos(math.pi/4)
+        #     self.y += self.vel*math.sin(math.pi/4)
         elif move_direction == "W":
             self.x -= self.vel
-        elif move_direction == "NW":
-            self.x -= self.vel*math.cos(math.pi/4)
-            self.y -= self.vel*math.sin(math.pi/4)
+        # elif move_direction == "NW":
+        #     self.x -= self.vel*math.cos(math.pi/4)
+        #     self.y -= self.vel*math.sin(math.pi/4)
         else:
             raise ValueError("Invalid move direction")
         

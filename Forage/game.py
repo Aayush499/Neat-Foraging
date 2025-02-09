@@ -40,9 +40,17 @@ class Game:
         self.agent = Agent(
             self.window_height // 2 , self.window_width // 2)
         self.total_food = 1
-        food_pos, edges = foodGenerator((self.agent.x, self.agent.y), self.total_food, self.agent.sensor_length)
-        self.optimalTime = bestPath(edges, (self.agent.x, self.agent.y))/self.agent.vel
-        self.food_list = [Food(x, y) for x, y in food_pos]
+        # food_pos, edges = foodGenerator((self.agent.x, self.agent.y), self.total_food, self.agent.sensor_length)
+        # self.optimalTime = (((bestPath(edges, (self.agent.x, self.agent.y)))*self.agent.sensor_length)/self.agent.vel)*2
+        self.optimalTime  = 2*self.agent.sensor_length/self.agent.vel
+        # self.food_list = [Food(x, y) for x, y in food_pos]
+        #pick a random sensor to place the first food
+        first_food = random.randint(0,self.agent.sensor_count-1)
+        angle = 2 * math.pi * first_food / self.agent.sensor_count
+        x1 = self.agent.x + self.agent.sensor_length * math.cos(angle)
+        y1 = self.agent.y + self.agent.sensor_length * math.sin(angle)
+        self.food_list = [Food(x1, y1)]
+
         self.score = 0
         self.food_collected = 0
         self.pheromones = []
@@ -147,7 +155,15 @@ class Game:
                 if check_circle_intersection(d, (nest.x,nest.y), nest.radius):
                     agent.sensors[i][j][2] = 1
 
-
+    def update_pheromones(self):
+        for i in range(len(self.pheromones)):
+            x, y, strength = self.pheromones[i].x, self.pheromones[i].y, self.pheromones[i].strength
+            strength -= 1.0/self.optimalTime
+            if strength <= 0:
+                self.pheromones[i] = None
+            else:
+                self.pheromones[i].strength = strength
+        self.pheromones[:] = [p for p in self.pheromones if p is not None]
 
     def draw_agent(self):
         pygame.draw.circle(self.window, self.agent.color, (self.agent.x,self.agent.y), self.agent.radius)
@@ -271,6 +287,7 @@ class Game:
          
         self._handle_collision()
         self.update_sensor_data()
+        self.update_pheromones()
         
         game_info = GameInformation(
             self.score, self.food_collected, self.total_food, self.food_list)
