@@ -19,7 +19,7 @@ class Agent:
         self.color = BLUE
        
         self.vel = 4
-        self.sensors = [[[0, 0, 0] for _ in range(self.sensor_segments)] for _ in range(self.sensor_count)]
+        self.sensors = [[[0] for _ in range(self.sensor_segments+2)] for _ in range(self.sensor_count)]
         self.sensor_color = YELLOW
 
 
@@ -30,8 +30,8 @@ class Agent:
         for i in range(self.sensor_count):
             angle = 2 * math.pi * i / self.sensor_count
             end_x = self.x + self.sensor_length * math.cos(angle)
-            end_y = self.y + self.sensor_length * math.sin(angle)
-            pygame.draw.line(win, YELLOW, (self.x, self.y), (end_x, end_y), 1)
+            end_y = self.y - self.sensor_length * math.sin(angle)
+            pygame.draw.line(win, self.sensor_color, (self.x, self.y), (end_x, end_y), 1)
          
 
     def move(self, move_direction):

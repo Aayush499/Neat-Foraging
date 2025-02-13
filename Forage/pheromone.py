@@ -9,4 +9,8 @@ class Pheromone:
         self.color = (255, 255, 0)
 
     def draw(self, win):
-        pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
+        x, y, strength = self.x, self.y, self.strength
+        if strength > 0:
+            alpha = int(255 * strength)
+            color = (255, 255, 0, alpha)
+            pygame.draw.circle(win, self.color, (x, y), self.radius)

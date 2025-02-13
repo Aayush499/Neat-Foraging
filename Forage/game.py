@@ -48,7 +48,7 @@ class Game:
         first_food = random.randint(0,self.agent.sensor_count-1)
         angle = 2 * math.pi * first_food / self.agent.sensor_count
         x1 = self.agent.x + self.agent.sensor_length * math.cos(angle)
-        y1 = self.agent.y + self.agent.sensor_length * math.sin(angle)
+        y1 = self.agent.y - self.agent.sensor_length * math.sin(angle)
         self.food_list = [Food(x1, y1)]
 
         self.score = 0
@@ -102,21 +102,7 @@ class Game:
         nest = self.nest
         for i in range(agent.sensor_count):
             angle = 2 * math.pi * i / agent.sensor_count
-            for j in range(agent.sensor_segments):
-                segment_length_end = (j + 1) * ( agent.sensor_length / agent.sensor_segments)
-                segment_length_start = j * (agent.sensor_length / agent.sensor_segments)
-                x2 =  agent.x + segment_length_end * math.cos(angle)
-                y2 = agent.y + segment_length_end * math.sin(angle)
-                x1 = agent.x + segment_length_start * math.cos(angle)
-                y1 = agent.y + segment_length_start * math.sin(angle)
-
-                # Reset sensor data
-                agent.sensors[i][j] = [0, 0, 0]
-                
-                # Sensor line coefficients
-                d = numpy.array([x2 - x1, y2 - y1])
-
-                def check_circle_intersection(d, centre, radius):
+            def check_circle_intersection(d, centre, radius):
                     """Check for intersection of the line segment with a circle."""
                     f = numpy.array([x1 - centre[0], y1 - centre[1]])
                     a = d.dot(d)
@@ -140,20 +126,44 @@ class Game:
                             return True
                         else:
                             return False
-                        
-                # Check for food
-                for food in self.food_list:
-                    if check_circle_intersection(d, (food.x,food.y), food.radius):
-                        agent.sensors[i][j][0] = 1
+            for j in range(agent.sensor_segments):
+                segment_length_end = (j + 1) * ( agent.sensor_length / agent.sensor_segments)
+                segment_length_start = j * (agent.sensor_length / agent.sensor_segments)
+                x2 =  agent.x + segment_length_end * math.cos(angle)
+                y2 = agent.y - segment_length_end * math.sin(angle)
+                x1 = agent.x + segment_length_start * math.cos(angle)
+                y1 = agent.y - segment_length_start * math.sin(angle)
+
+                # Reset sensor data
+                agent.sensors[i][j] = 0
+                
+                # Sensor line coefficients
+                d = numpy.array([x2 - x1, y2 - y1])
 
                 #check pheromones
                 for pheromone in self.pheromones:
                     if check_circle_intersection(d, (pheromone.x,pheromone.y), pheromone.radius):
-                        agent.sensors[i][j][1] = max(agent.sensors[i][j][1], pheromone.strength)
+                        agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength)
                 
-                #check nest
-                if check_circle_intersection(d, (nest.x,nest.y), nest.radius):
-                    agent.sensors[i][j][2] = 1
+            x2 = agent.x + agent.sensor_length * math.cos(angle)
+            y2 = agent.y - agent.sensor_length * math.sin(angle)
+            x1 = agent.x
+            y1 = agent.y
+            d = numpy.array([x2 - x1, y2 - y1])   
+            
+            agent.sensors[i][j+1] = 6000
+            # Check for food
+            for food in self.food_list:
+                if check_circle_intersection(d, (food.x,food.y), food.radius):
+                    dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
+                    agent.sensors[i][j+1] = dist
+
+            
+            #check nest
+            agent.sensors[i][j+2] = 6000
+            if check_circle_intersection(d, (nest.x,nest.y), nest.radius):
+                dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
+                agent.sensors[i][j+2] = dist
 
     def update_pheromones(self):
         for i in range(len(self.pheromones)):
@@ -166,27 +176,31 @@ class Game:
         self.pheromones[:] = [p for p in self.pheromones if p is not None]
 
     def draw_agent(self):
-        pygame.draw.circle(self.window, self.agent.color, (self.agent.x,self.agent.y), self.agent.radius)
+        # pygame.draw.circle(self.window, self.agent.color, (self.agent.x,self.agent.y), self.agent.radius)
 
-        # Draw sensors
-        for i in range(self.agent.sensor_count):
-            angle = 2 * math.pi * i / self.agent.sensor_count
-            end_x = self.agent.x + self.agent.sensor_length * math.cos(angle)
-            end_y = self.agent.y + self.agent.sensor_length * math.sin(angle)
-            pygame.draw.line(self.window, self.agent.sensor_color, (self.agent.x,self.agent.y), (end_x, end_y), 1)
+        # # Draw sensors
+        # for i in range(self.agent.sensor_count):
+        #     angle = 2 * math.pi * i / self.agent.sensor_count
+        #     end_x = self.agent.x + self.agent.sensor_length * math.cos(angle)
+        #     end_y = self.agent.y - self.agent.sensor_length * math.sin(angle)
+        #     pygame.draw.line(self.window, self.agent.sensor_color, (self.agent.x,self.agent.y), (end_x, end_y), 1)
+
+        self.agent.draw(self.window)
 
     def draw_pheromones(self):
         for pheromone in self.pheromones:
-            x, y, strength = pheromone.x, pheromone.y, pheromone.strength
-            if strength > 0:
-                alpha = int(255 * strength)
-                color = (255, 255, 0, alpha)
-                pygame.draw.circle(self.window, pheromone.color, (x, y), pheromone.radius)
+            # x, y, strength = pheromone.x, pheromone.y, pheromone.strength
+            # if strength > 0:
+            #     alpha = int(255 * strength)
+            #     color = (255, 255, 0, alpha)
+            #     pygame.draw.circle(self.window, pheromone.color, (x, y), pheromone.radius)
+            pheromone.draw(self.window)
 
     def draw_food(self):
         # pygame.draw.circle(screen, GREEN, food_pos, food_radius)
         for food in self.food_list:
-            pygame.draw.circle(self.window, food.color, (food.x, food.y), food.radius)
+            # pygame.draw.circle(self.window, food.color, (food.x, food.y), food.radius)
+            food.draw(self.window)
 
     def draw_nest(self):
         self.nest.draw(self.window)
@@ -198,9 +212,9 @@ class Game:
         font = pygame.font.Font(None, 24)  # Create a font object
         #check agent's sensors for collisions with food, pheromones and nest and display a message in the window if there is a collision
         for i in range(agent.sensor_count):
-            for j in range(agent.sensor_segments):
-                if agent.sensors[i][j][0] == 1:
-                    messages.append(f"Food detected at Sensor {i}, Segment {j}")
+            
+            if agent.sensors[i][-2] >0 and agent.sensors[i][-2] <= agent.sensor_length:
+                messages.append(f"Food detected at Sensor {i}, {agent.sensors[i][-2]} distance away")
                 # if agent.sensors[i][j][1] > 0:
                 #     messages.append(f"Pheromone detected at Sensor {i}, Segment {j}")
                 # if agent.sensors[i][j][2] == 1:

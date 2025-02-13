@@ -21,6 +21,63 @@ class ForageTask:
         self.pheromone = self.game.pheromones
         self.nest = self.game.nest
         
+    def manual_test(self, net):
+        """
+        Manually control the agent using WASD keys and observe the network's outputs.
+        """
+        clock = pygame.time.Clock()
+        run = True
+        
+        while run:
+            clock.tick(60)
+            self.game.loop()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                    break
+
+            # Capture key presses
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_w]:
+                move_direction = "N"
+            elif keys[pygame.K_s]:
+                move_direction = "S"
+            elif keys[pygame.K_a]:
+                move_direction = "W"
+            elif keys[pygame.K_d]:
+                move_direction = "E"
+            else:
+                move_direction = None  # No movement
+            
+            # Move agent manually
+            if move_direction:
+                self.game.move_agent(move_direction)
+
+            # Gather sensor inputs for network evaluation
+            sensor_inputs = []
+            for sensor in self.agent.sensors:
+                for cell in sensor:
+                    sensor_inputs.append(cell)  # Append (food, pheromone, nest) values
+            sensor_inputs.append(self.agent.carrying_food)  # Append carrying food value
+            
+            # Get the network's response
+            output = net.activate(sensor_inputs)
+            move_actions = ["N", "E", "S", "W"]
+            action_index = output.index(max(output[:4]))  # Get predicted move direction
+            predicted_move = move_actions[action_index]
+            place_pheromone = output[4] > 0.5  # Whether it wants to place pheromones
+
+            # Display network's decision
+            print(f"Predicted Move: {predicted_move}, Pheromone: {place_pheromone}")
+
+            if place_pheromone:
+                self.game.place_pheromone()
+
+            self.game.draw(draw_score=True)
+            pygame.display.update()
+
+
 
     def test_ai(self, net):
         """
@@ -40,7 +97,7 @@ class ForageTask:
             sensor_inputs = []
             for sensor in self.agent.sensors:
                 for cell in sensor:
-                    sensor_inputs.extend(cell)  # Append (food, pheromone, nest) values
+                    sensor_inputs.append(cell)  # Append (food, pheromone, nest) values
             sensor_inputs.append(self.agent.carrying_food) # Append carrying food value
 
             output = net.activate(sensor_inputs)  # NEAT expects a list of inputs
@@ -114,7 +171,7 @@ class ForageTask:
         sensor_inputs = []
         for sensor in self.agent.sensors:
             for cell in sensor:
-                sensor_inputs.extend(cell)  # Append (food, pheromone, nest) values
+                sensor_inputs.append(cell)  # Append (food, pheromone, nest) values
         sensor_inputs.append(self.agent.carrying_food) # Append carrying food value
         
         output = net.activate(sensor_inputs)  # NEAT expects a list of inputs
@@ -173,7 +230,8 @@ def eval_genomes(genomes, config):
 
 def run_neat(config):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
-    checkpoint_file = 'checkpoints/four_sensor/1999'
+    # checkpoint_file = ''
+    checkpoint_file = ''
 
     # Resume training if checkpoint exists
     if os.path.exists(checkpoint_file):
@@ -185,9 +243,9 @@ def run_neat(config):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(50, None, 'checkpoints/four_sensor/'))
-
-    winner = p.run(eval_genomes, 1)
+    p.add_reporter(neat.Checkpointer(50, None, 'checkpoints/reduced_input_modified_config/'))
+  
+    winner = p.run(eval_genomes, 2000)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
@@ -219,7 +277,7 @@ def test_best_network(config):
 
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config-base')
+    config_path = os.path.join(local_dir, 'config-reduced-input')
 
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
