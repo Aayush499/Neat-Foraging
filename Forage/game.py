@@ -45,11 +45,21 @@ class Game:
         self.optimalTime  = 2*self.agent.sensor_length/self.agent.vel
         # self.food_list = [Food(x, y) for x, y in food_pos]
         #pick a random sensor to place the first food
-        first_food = random.randint(0,self.agent.sensor_count-1)
+        # first_food = random.randint(0,self.agent.sensor_count-1)
+        #BIASING THE FOOD TO THE EAST AND WEST
+        if random.random() < 0.8:
+            first_food = random.choice([0, 2])
+        else:
+            first_food = random.choice([1, 3])
+
+            
         angle = 2 * math.pi * first_food / self.agent.sensor_count
         x1 = self.agent.x + self.agent.sensor_length * math.cos(angle)
         y1 = self.agent.y - self.agent.sensor_length * math.sin(angle)
         self.food_list = [Food(x1, y1)]
+
+        
+
 
         self.score = 0
         self.food_collected = 0

@@ -6,6 +6,7 @@ import os
 import time
 import pickle
 import matplotlib.pyplot as plt
+from Forage.food import Food
 NUM_RUNS = 5
 
 class ForageTask:
@@ -39,6 +40,7 @@ class ForageTask:
 
             # Capture key presses
             keys = pygame.key.get_pressed()
+            
             if keys[pygame.K_w]:
                 move_direction = "N"
             elif keys[pygame.K_s]:
@@ -49,7 +51,14 @@ class ForageTask:
                 move_direction = "E"
             else:
                 move_direction = None  # No movement
+            #capture mouse click
+            click = pygame.mouse.get_pressed()
+            if click[0]:
+                newFood = Food(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
+                self.game.food_list.append(newFood)
             
+
+                
             # Move agent manually
             if move_direction:
                 self.game.move_agent(move_direction)
@@ -230,8 +239,8 @@ def eval_genomes(genomes, config):
 
 def run_neat(config):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
+    checkpoint_file = 'checkpoints/biased_west/2699'
     # checkpoint_file = ''
-    checkpoint_file = ''
 
     # Resume training if checkpoint exists
     if os.path.exists(checkpoint_file):
@@ -243,9 +252,9 @@ def run_neat(config):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(50, None, 'checkpoints/reduced_input_modified_config/'))
+    p.add_reporter(neat.Checkpointer(50, None, 'checkpoints/biased_west/'))
   
-    winner = p.run(eval_genomes, 2000)
+    winner = p.run(eval_genomes, 1)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
