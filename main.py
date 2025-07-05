@@ -239,7 +239,7 @@ def eval_genomes(genomes, config):
 
 def run_neat(config):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
-    checkpoint_file = 'checkpoints/biased_west/2699'
+    checkpoint_file = 'checkpoints/biased_west/49'
     # checkpoint_file = ''
 
     # Resume training if checkpoint exists

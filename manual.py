@@ -10,6 +10,7 @@ from main import ForageTask
 # 1. specify config file path
 config_path = 'config-reduced-input'
 # 2. define the path for the best network
+# winner_path = "checkpoints/biased_west/49"
 winner_path = "best.pickle"
 
 config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
@@ -22,6 +23,11 @@ def manual_testing(config):
     with open("best.pickle", "rb") as f:
         winner = pickle.load(f)
     winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+    with open(winner_path, "rb") as f:
+        winner = pickle.load(f)
+    # p = neat.Checkpointer.restore_checkpoint(winner_path)
+
+    # winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
     width, height = 700, 500
     win = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Forage")
