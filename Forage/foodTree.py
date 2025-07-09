@@ -1,11 +1,11 @@
 import random 
 import math
 
-def foodGenerator(root_coords, num_of_food, sensor_length ):
-    num_sensors = 8
+def foodGenerator(root_coords, num_of_food, sensor_length, num_sensors ):
+    # num_sensors = 8
 
     agent_pos = root_coords
-    first_food = random.randint(0,7)
+    first_food = random.randint(0,num_sensors-1)  # Randomly select a sensor to place the first food item
     
     #coordinate of first food 
 

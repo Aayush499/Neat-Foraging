@@ -40,7 +40,7 @@ class Game:
         self.agent = Agent(
             self.window_height // 2 , self.window_width // 2)
         self.total_food = 1
-        food_pos, edges = foodGenerator((self.agent.x, self.agent.y), self.total_food, self.agent.sensor_length)
+        food_pos, edges = foodGenerator((self.agent.x, self.agent.y), self.total_food, self.agent.sensor_length, self.agent.sensor_count)
         self.optimalTime = (((bestPath(edges, (self.agent.x, self.agent.y)))*self.agent.sensor_length)/self.agent.vel)*2
         # self.optimalTime  = 2*self.agent.sensor_length/self.agent.vel
         self.food_list = [Food(x, y) for x, y in food_pos]
@@ -159,7 +159,7 @@ class Game:
             y1 = agent.y
             d = numpy.array([x2 - x1, y2 - y1])   
             
-            agent.sensors[i][j+1] = 6000
+            agent.sensors[i][j+1] = agent.sensor_length+1  # Default value for no food detected
             # Check for food
             for food in self.food_list:
                 if check_circle_intersection(d, (food.x,food.y), food.radius):
@@ -168,7 +168,7 @@ class Game:
 
             
             #check nest
-            agent.sensors[i][j+2] = 6000
+            agent.sensors[i][j+2] = agent.sensor_length+1  # Default value for no nest detected
             if check_circle_intersection(d, (nest.x,nest.y), nest.radius):
                 dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
                 agent.sensors[i][j+2] = dist

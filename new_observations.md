@@ -8,3 +8,9 @@
         - Just checked it, literally the next time I ran it, the winner was 2.6 LOL.
     - So what remains to be seen is if the manual file works I guess? I think it does, was using it a while ago.
         - ALSO, is it possible to make the checkpoint AFTER the evaluation? Why would you do it before?
+
+
+#### Update (Jul 6)
+    - Just noticed the food generator was still set to generating 8 food particles 
+    - The generator should work decent when generating 1 or 2 food particles, but as the number increases, the chances of having coincided food particles increases. Might be an issue.
+    -I might want to 
