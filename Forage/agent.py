@@ -12,14 +12,19 @@ class Agent:
         # self.sensor_count = 8
         self.sensor_count = 4
         # self.sensor_segments = 8
-        self.sensor_segments = 4
+        self.sensor_segments = 1
         self.carrying_food = False
         self.radius = 10
         self.sensor_length = 100
         self.color = BLUE
        
         self.vel = 4
-        self.sensors = [[[0] for _ in range(self.sensor_segments+2)] for _ in range(self.sensor_count)]
+        #keep a variable that tells us what types of sensors we have 
+        self.nest_receptor = False
+        self.food_receptor = True
+        self.pheromone_receptor = True
+        self.carrying_food_receptor = False
+        self.sensors = [[[0] for _ in range(self.sensor_segments*self.pheromone_receptor + self.food_receptor + self.nest_receptor) ] for _ in range(self.sensor_count)]
         self.sensor_color = YELLOW
 
 

@@ -149,9 +149,15 @@ class Game:
                 d = numpy.array([x2 - x1, y2 - y1])
 
                 #check pheromones
+                max_strength = 0
                 for pheromone in self.pheromones:
+                    dist = ((agent.x - pheromone.x) ** 2 + (agent.y - pheromone.y) ** 2) ** 0.5
                     if check_circle_intersection(d, (pheromone.x,pheromone.y), pheromone.radius):
-                        agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength)
+                        # agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength)
+                        if pheromone.strength > max_strength:
+                            max_strength = pheromone.strength
+                            agent.sensors[i][j] = max_strength*(1 - dist/agent.sensor_length)  
+                            
                 
             x2 = agent.x + agent.sensor_length * math.cos(angle)
             y2 = agent.y - agent.sensor_length * math.sin(angle)
@@ -159,25 +165,27 @@ class Game:
             y1 = agent.y
             d = numpy.array([x2 - x1, y2 - y1])   
             
-            agent.sensors[i][j+1] = agent.sensor_length+1  # Default value for no food detected
+            agent.sensors[i][j+1] = 0  # Default value for no food detected
             # Check for food
             for food in self.food_list:
                 if check_circle_intersection(d, (food.x,food.y), food.radius):
                     dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
-                    agent.sensors[i][j+1] = dist
+                    agent.sensors[i][j+1] = 1 - (dist / agent.sensor_length) #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
 
             
             #check nest
-            agent.sensors[i][j+2] = agent.sensor_length+1  # Default value for no nest detected
-            if check_circle_intersection(d, (nest.x,nest.y), nest.radius):
-                dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
-                agent.sensors[i][j+2] = dist
+            if agent.nest_receptor:
+                agent.sensors[i][j+2] = 0  # Default value for no nest detected
+                if check_circle_intersection(d, (nest.x,nest.y), nest.radius):
+                    dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
+                    agent.sensors[i][j+2] = dist
 
     def update_pheromones(self):
         for i in range(len(self.pheromones)):
-            x, y, strength = self.pheromones[i].x, self.pheromones[i].y, self.pheromones[i].strength
-            strength -= 1.0/self.optimalTime
-            if strength <= 0:
+            strength =   self.pheromones[i].strength
+            # strength -= 1.0/self.optimalTime
+            strength *= .99
+            if strength < 0.00001:
                 self.pheromones[i] = None
             else:
                 self.pheromones[i].strength = strength

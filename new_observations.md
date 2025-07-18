@@ -13,4 +13,19 @@
 #### Update (Jul 6)
     - Just noticed the food generator was still set to generating 8 food particles 
     - The generator should work decent when generating 1 or 2 food particles, but as the number increases, the chances of having coincided food particles increases. Might be an issue.
-    -I might want to 
+    -I might want to (incomplete)
+
+
+#### July 18
+    - Trying to replicate the setup of Chung's experiments
+    - Removed pheromone sensor segmentation
+    - Obtained an equation from perplexity to calculate the pheromone signal input
+        - S_closest(1 - Distance/Sensor_length)
+        - I implemented this
+    - Removed nest sensor (added "nest_sensor_receptor")
+    - Removed "carrying_food" input node (added "carrying_food_receptor)
+    - Modified config file 'config-reduced-inputs' to behave like genetic algorithm by removing mutation rates
+    - Also made some modifications according to perplexity
+        
+
+

@@ -107,7 +107,9 @@ class ForageTask:
             for sensor in self.agent.sensors:
                 for cell in sensor:
                     sensor_inputs.append(cell)  # Append (food, pheromone, nest) values
-            sensor_inputs.append(self.agent.carrying_food) # Append carrying food value
+            
+            if self.agent.carrying_food_receptor:
+                sensor_inputs.append(self.agent.carrying_food) # Append carrying food value
 
             output = net.activate(sensor_inputs)  # NEAT expects a list of inputs
 
@@ -117,7 +119,7 @@ class ForageTask:
             action_index  = output.index(max(output[:4]))
             move_direction = move_actions[action_index] 
             # place_pheromone = output[8] > 0.5
-            place_pheromone = output[4] > 0.5
+            place_pheromone = output[4] > 0
             # movement = output[9] > 0.5
 
 
@@ -135,8 +137,8 @@ class ForageTask:
 
     def train_ai(self, genome, config, draw=False):
         """
-        Train the AI by passing two NEAT neural networks and the NEAt config object.
-        These AI's will play against eachother to determine their fitness.
+        Train the AI by passing  NEAT neural networks and the NEAt config object.
+   
         """
          
         run = True
@@ -181,7 +183,8 @@ class ForageTask:
         for sensor in self.agent.sensors:
             for cell in sensor:
                 sensor_inputs.append(cell)  # Append (food, pheromone, nest) values
-        sensor_inputs.append(self.agent.carrying_food) # Append carrying food value
+            if self.agent.carrying_food_receptor:
+                sensor_inputs.append(self.agent.carrying_food) # Append carrying food value
         
         output = net.activate(sensor_inputs)  # NEAT expects a list of inputs
         # move_actions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
@@ -239,8 +242,8 @@ def eval_genomes(genomes, config):
 
 def run_neat(config):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
-    checkpoint_file = 'checkpoints/biased_west/49'
-    # checkpoint_file = ''
+    # checkpoint_file = 'checkpoints/replication/99'
+    checkpoint_file = ''
 
     # Resume training if checkpoint exists
     if os.path.exists(checkpoint_file):
@@ -252,9 +255,9 @@ def run_neat(config):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(50, None, 'checkpoints/biased_west/'))
+    p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/replication/'))
   
-    winner = p.run(eval_genomes, 1)
+    winner = p.run(eval_genomes, 300)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
