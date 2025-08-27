@@ -4,6 +4,7 @@ from .pheromone import Pheromone
 from .nest import Nest
 from .foodTree import foodGenerator
 from .optimalPath import bestPath
+from .optimalPath import bestPathPerNode
 import pygame
 import random
 import math
@@ -33,32 +34,37 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0):
         self.window_width = window_width
         self.window_height = window_height
 
         self.agent = Agent(
             self.window_height // 2 , self.window_width // 2)
-        self.total_food = 1
-        food_pos, edges = foodGenerator((self.agent.x, self.agent.y), self.total_food, self.agent.sensor_length, self.agent.sensor_count)
-        self.optimalTime = (((bestPath(edges, (self.agent.x, self.agent.y)))*self.agent.sensor_length)/self.agent.vel)*2
-        # self.optimalTime  = 2*self.agent.sensor_length/self.agent.vel
+        self.total_food = 2
+        
+        #create 4 possible food paths, one to the north,to the east, south and west
+        food_pos_N = [(self.agent.x, self.agent.y+ (self.agent.sensor_length-.1)*i) for i in range(1, self.total_food+1)]
+        food_pos_E = [(self.agent.x+ (self.agent.sensor_length-.1)*i, self.agent.y) for i in range(1, self.total_food+1)]
+        food_pos_S = [(self.agent.x, self.agent.y- (self.agent.sensor_length-.1)*i) for i in range(1, self.total_food+1)]
+        food_pos_W = [(self.agent.x- (self.agent.sensor_length-.1)*i, self.agent.y) for i in range(1, self.total_food+1)]
+        food_pos_SW = [(self.agent.x, self.agent.y- (self.agent.sensor_length-.1)), (self.agent.x-(self.agent.sensor_length-1), self.agent.y- (self.agent.sensor_length-1))]
+        food_pos_SE = [(self.agent.x, self.agent.y- (self.agent.sensor_length-.1)), (self.agent.x+(self.agent.sensor_length-1), self.agent.y- (self.agent.sensor_length-1))]
+        food_pos_NW = [(self.agent.x, self.agent.y+ (self.agent.sensor_length-.1)), (self.agent.x-(self.agent.sensor_length-1), self.agent.y+ (self.agent.sensor_length-1))]
+        food_pos_NE = [(self.agent.x, self.agent.y+ (self.agent.sensor_length-.1)), (self.agent.x+(self.agent.sensor_length-1), self.agent.y+ (self.agent.sensor_length-1))]
+        food_pos_EN = [(self.agent.x+(self.agent.sensor_length-.1), self.agent.y), (self.agent.x+(self.agent.sensor_length-1), self.agent.y+(self.agent.sensor_length-1))]
+        food_pos_ES = [(self.agent.x+(self.agent.sensor_length-.1), self.agent.y), (self.agent.x+(self.agent.sensor_length-1), self.agent.y-(self.agent.sensor_length-1))]
+        food_pos_WN = [(self.agent.x-(self.agent.sensor_length-.1), self.agent.y), (self.agent.x-(self.agent.sensor_length-1), self.agent.y+(self.agent.sensor_length-1))]
+        food_pos_WS = [(self.agent.x-(self.agent.sensor_length-.1), self.agent.y), (self.agent.x-(self.agent.sensor_length-1), self.agent.y-(self.agent.sensor_length-1))]
+         #choose one of the 4 arrangements based on the arrangement_idx parameter
+        arrangements = [food_pos_N, food_pos_E, food_pos_S, food_pos_W, food_pos_SW, food_pos_SE, food_pos_NW, food_pos_NE, food_pos_EN, food_pos_ES, food_pos_WN, food_pos_WS]
+        # food_pos = random.choice(arrangements)
+        food_pos = arrangements[arrangement_idx]
         self.food_list = [Food(x, y) for x, y in food_pos]
-        #pick a random sensor to place the first food
-        # first_food = random.randint(0,self.agent.sensor_count-1)
-        #BIASING THE FOOD TO THE EAST AND WEST
-        # if random.random() < 0.8:
-        #     first_food = random.choice([0, 2])
-        # else:
-        #     first_food = random.choice([1, 3])
-
-            
-        # angle = 2 * math.pi * first_food / self.agent.sensor_count
-        # x1 = self.agent.x + self.agent.sensor_length * math.cos(angle)
-        # y1 = self.agent.y - self.agent.sensor_length * math.sin(angle)
-        # self.food_list = [Food(x1, y1)]
 
 
+        self.optimalTime = 2*self.agent.sensor_length/self.agent.vel + 2 +20
+        self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
+        
         self.score = 0
         self.food_collected = 0
         self.pheromones = []
@@ -87,10 +93,12 @@ class Game:
        
         agent = self.agent
         nest = self.nest
+        collision_threshold = 1
         if not agent.carrying_food:
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
-                if dist < agent.radius + food.radius:
+                # if dist < agent.radius + food.radius:
+                if dist < collision_threshold:
                     self.score += 1
                     
                     agent.carrying_food = True
@@ -98,10 +106,14 @@ class Game:
                     break
         else:
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
-            if dist < agent.radius + nest.radius:
+            # if dist < agent.radius + nest.radius:
+            if dist < collision_threshold:
                 self.score += 2
                 self.food_collected += 1
                 agent.carrying_food = False
+                self.TIME_BONUS += 2*self.agent.sensor_length/self.agent.vel  
+                self.optimalTime += self.TIME_BONUS
+                
             
    
     def update_sensor_data(self):
@@ -110,112 +122,79 @@ class Game:
         nest = self.nest
         for i in range(agent.sensor_count):
             angle = 2 * math.pi * i / agent.sensor_count
-            def check_circle_intersection(d, centre, radius):
-                    """Check for intersection of the line segment with a circle."""
-                    f = numpy.array([x1 - centre[0], y1 - centre[1]])
-                    a = d.dot(d)
-                    b = 2 * f.dot(d)
-                    c = f.dot(f) - radius**2
-                    discriminant = b**2 - 4 * a * c
+            def check_quadrant(agent, object):
 
-                    if(discriminant < 0):
-                        return False
-                    else:
-                        discriminant = math.sqrt(discriminant)
-                        t1 = (-b - discriminant) / (2 * a)
-                        t2 = (-b + discriminant) / (2 * a)
+                #calculate distance between agent and object
 
+                dist = ((agent.x - object.x) ** 2 + (agent.y - object.y) ** 2) ** 0.5
+                dx = object.x - agent.x
+                dy = object.y - agent.y
+                angle_to_food = math.atan2(dy, dx)            # Returns angle in radians
 
-                        if t1>=0 and t1<=1:
-                            return True
-                        elif t2>=0 and t2<=1:
-                            return True
-                        elif t1<0 and t2>1:
-                            return True
-                        else:
-                            return False
+                relative_angle = (angle_to_food - agent.theta) % (2 * math.pi)   # Ensures value between 0 and 2π
+
+                bin_width = (2 * math.pi) / agent.sensor_count
+                sensor_index = int(relative_angle // bin_width)    # Integer division places angle into a sensor’s bin
+                return sensor_index
+
             for j in range(agent.sensor_segments):
-                segment_length_end = (j + 1) * ( agent.sensor_length / agent.sensor_segments)
-                segment_length_start = j * (agent.sensor_length / agent.sensor_segments)
-                x2 =  agent.x + segment_length_end * math.cos(angle)
-                y2 = agent.y - segment_length_end * math.sin(angle)
-                x1 = agent.x + segment_length_start * math.cos(angle)
-                y1 = agent.y - segment_length_start * math.sin(angle)
 
                 # Reset sensor data
                 agent.sensors[i][j] = 0
-                
-                # Sensor line coefficients
-                d = numpy.array([x2 - x1, y2 - y1])
+                 
 
                 #check pheromones
                 max_strength = 0
                 for pheromone in self.pheromones:
                     dist = ((agent.x - pheromone.x) ** 2 + (agent.y - pheromone.y) ** 2) ** 0.5
-                    if check_circle_intersection(d, (pheromone.x,pheromone.y), pheromone.radius):
-                        # agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength)
-                        if pheromone.strength > max_strength:
-                            max_strength = pheromone.strength
-                            agent.sensors[i][j] = max_strength*(1 - dist/agent.sensor_length)  
+                    if check_quadrant(agent, pheromone) == i and dist < agent.sensor_length:
+                        agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength*(1 - dist/agent.sensor_length))
+                        # if pheromone.strength > max_strength:
+                        #     max_strength = pheromone.strength
+                        #     agent.sensors[i][j] = max_strength*(1 - dist/agent.sensor_length)  
                             
-                
-            x2 = agent.x + agent.sensor_length * math.cos(angle)
-            y2 = agent.y - agent.sensor_length * math.sin(angle)
-            x1 = agent.x
-            y1 = agent.y
-            d = numpy.array([x2 - x1, y2 - y1])   
             
             agent.sensors[i][j+1] = 0  # Default value for no food detected
             # Check for food
             for food in self.food_list:
-                if check_circle_intersection(d, (food.x,food.y), food.radius):
-                    dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
-                    agent.sensors[i][j+1] = 1 - (dist / agent.sensor_length) #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
+                dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
+                if check_quadrant(agent, food) == i and dist < agent.sensor_length:
+                    
+                    agent.sensors[i][j+1] = max(1 - (dist / agent.sensor_length), agent.sensors[i][j+1]) #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
 
             
             #check nest
             if agent.nest_receptor:
                 agent.sensors[i][j+2] = 0  # Default value for no nest detected
-                if check_circle_intersection(d, (nest.x,nest.y), nest.radius):
-                    dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
-                    agent.sensors[i][j+2] = dist
+                dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
+                if check_quadrant(agent, nest) == i and dist < agent.sensor_length:
+
+                    agent.sensors[i][j+2] = 1 - (dist / agent.sensor_length)
 
     def update_pheromones(self):
         for i in range(len(self.pheromones)):
             strength =   self.pheromones[i].strength
             # strength -= 1.0/self.optimalTime
             strength *= .99
-            if strength < 0.00001:
+            if strength < 0.1:
                 self.pheromones[i] = None
             else:
                 self.pheromones[i].strength = strength
         self.pheromones[:] = [p for p in self.pheromones if p is not None]
 
     def draw_agent(self):
-        # pygame.draw.circle(self.window, self.agent.color, (self.agent.x,self.agent.y), self.agent.radius)
-
-        # # Draw sensors
-        # for i in range(self.agent.sensor_count):
-        #     angle = 2 * math.pi * i / self.agent.sensor_count
-        #     end_x = self.agent.x + self.agent.sensor_length * math.cos(angle)
-        #     end_y = self.agent.y - self.agent.sensor_length * math.sin(angle)
-        #     pygame.draw.line(self.window, self.agent.sensor_color, (self.agent.x,self.agent.y), (end_x, end_y), 1)
-
+         
         self.agent.draw(self.window)
 
     def draw_pheromones(self):
         for pheromone in self.pheromones:
-            # x, y, strength = pheromone.x, pheromone.y, pheromone.strength
-            # if strength > 0:
-            #     alpha = int(255 * strength)
-            #     color = (255, 255, 0, alpha)
-            #     pygame.draw.circle(self.window, pheromone.color, (x, y), pheromone.radius)
+             
             pheromone.draw(self.window)
 
     def draw_food(self):
-        # pygame.draw.circle(screen, GREEN, food_pos, food_radius)
+         
         for food in self.food_list:
-            # pygame.draw.circle(self.window, food.color, (food.x, food.y), food.radius)
+            
             food.draw(self.window)
 
     def draw_nest(self):
@@ -229,12 +208,13 @@ class Game:
         #check agent's sensors for collisions with food, pheromones and nest and display a message in the window if there is a collision
         for i in range(agent.sensor_count):
             
-            if agent.sensors[i][-2] >0 and agent.sensors[i][-2] <= agent.sensor_length:
-                messages.append(f"Food detected at Sensor {i}, {agent.sensors[i][-2]} distance away")
-                # if agent.sensors[i][j][1] > 0:
-                #     messages.append(f"Pheromone detected at Sensor {i}, Segment {j}")
-                # if agent.sensors[i][j][2] == 1:
-                #     messages.append(f"Nest detected at Sensor {i}, Segment {j}")
+            if agent.food_receptor:
+                if agent.sensors[i][agent.sensor_segments] >0 :
+                    messages.append(f"Food detected at Sensor {i}, {agent.sensors[i][agent.sensor_segments]} distance away")
+                    # if agent.sensors[i][j][1] > 0:
+                    #     messages.append(f"Pheromone detected at Sensor {i}, Segment {j}")
+                    # if agent.sensors[i][j][2] == 1:
+                    #     messages.append(f"Nest detected at Sensor {i}, Segment {j}")
 
         padding = 10
         line_height = 20
@@ -258,46 +238,18 @@ class Game:
 
 
 
-    def move_agent(self, move_direction):
-        """
-        Move the left or right paddle.
+    def move_agent(self, O1, O2, O3): 
 
-        :returns: boolean indicating if paddle movement is valid. 
-                  Movement is invalid if it causes paddle to go 
-                  off the screen
-        """
-       
-        self.current_direction = move_direction
+        self.agent.theta = self.agent.theta + math.pi * O3
+        X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) + self.agent.vel * O2* math.cos(self.agent.theta + math.pi/2)
+        Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta) + self.agent.vel * O2* math.sin(self.agent.theta + math.pi/2)
         #check whether the agent hits the borders of the screen is move is executed
         #movement directions are N, NE, E, SE, S, SW, W, NW
         #if it hits a border, return False else move the agent and return True
 
-        if move_direction == "N":
-            if self.agent.y - self.agent.vel < 0:
-                return False
-        elif move_direction == "NE":
-            if self.agent.x + self.agent.vel*math.cos(math.pi/4) > self.window_width or self.agent.y - self.agent.vel*math.sin(math.pi/4) < 0:
-                return False
-        elif move_direction == "E":
-            if self.agent.x + self.agent.vel > self.window_width:
-                return False
-        elif move_direction == "SE":
-            if self.agent.x + self.agent.vel*math.cos(math.pi/4) > self.window_width or self.agent.y + self.agent.vel*math.sin(math.pi/4) > self.window_height:
-                return False
-        elif move_direction == "S":
-            if self.agent.y + self.agent.vel > self.window_height:
-                return False
-        elif move_direction == "SW":
-            if self.agent.x - self.agent.vel*math.cos(math.pi/4) < 0 or self.agent.y + self.agent.vel*math.sin(math.pi/4) > self.window_height:
-                return False
-        elif move_direction == "W":
-            if self.agent.x - self.agent.vel < 0:
-                return False
-        elif move_direction == "NW":
-            if self.agent.x - self.agent.vel*math.cos(math.pi/4) < 0 or self.agent.y - self.agent.vel*math.sin(math.pi/4) < 0:
-                return False
-            
-        self.agent.move(move_direction)
+        if X < 0 or X > self.window_width or Y < 0 or Y > self.window_height:
+            return False
+        self.agent.move(X, Y)
 
         return True
 

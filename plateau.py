@@ -8,7 +8,7 @@ import pickle
 import matplotlib.pyplot as plt
 from Forage.food import Food
 import numpy as np
-NUM_RUNS = 1 
+NUM_RUNS = 12
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
 
 class ForageTask:
@@ -208,7 +208,7 @@ def eval_genomes(genomes, config):
     """
     Run each genome a set number of time to determine the fitness.
     """
-    width, height = 900, 900
+    width, height = 700, 500
     draw = False
     win = None if not draw else pygame.display.set_mode((width, height))
     # pygame.display.set_caption("Forage")
@@ -244,7 +244,7 @@ def run_neat(config):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/plateau/'))
+    p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/replication_unstable/'))
     
     winner = p.run(eval_genomes, 300)
     with open("best.pickle", "wb") as f:
@@ -269,7 +269,7 @@ def test_best_network(config):
         winner = pickle.load(f)
     winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
 
-    width, height = 900, 900
+    width, height = 700, 700
     win = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Forage")
     foragetask = ForageTask(win, width, height, arrangement_idx=2)
@@ -278,7 +278,7 @@ def test_best_network(config):
 
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config-replication-plateau')
+    config_path = os.path.join(local_dir, 'config-replication')
 
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,

@@ -9,8 +9,9 @@ class Agent:
     def __init__(self, x, y):
         self.x = self.original_x = x
         self.y = self.original_y = y
-        # self.sensor_count = 8
-        self.sensor_count = 4
+        self.sensor_count = 8
+        self.theta = math.pi/2 #orientation of agent
+        # self.sensor_count = 4
         # self.sensor_segments = 8
         self.sensor_segments = 1
         self.carrying_food = False
@@ -18,7 +19,7 @@ class Agent:
         self.sensor_length = 100
         self.color = BLUE
        
-        self.vel = 4
+        self.vel = 3
         #keep a variable that tells us what types of sensors we have 
         self.nest_receptor = False
         self.food_receptor = True
@@ -33,35 +34,15 @@ class Agent:
                 win, self.color, (self.x, self.y), self.radius)
         # Draw sensors
         for i in range(self.sensor_count):
-            angle = 2 * math.pi * i / self.sensor_count
+            angle = 2 * math.pi * i / self.sensor_count + self.theta
             end_x = self.x + self.sensor_length * math.cos(angle)
             end_y = self.y - self.sensor_length * math.sin(angle)
             pygame.draw.line(win, self.sensor_color, (self.x, self.y), (end_x, end_y), 1)
          
 
-    def move(self, move_direction):
-        if move_direction == "N":
-            self.y -= self.vel
-        # elif move_direction == "NE":
-        #     self.x += self.vel*math.cos(math.pi/4)
-        #     self.y -= self.vel*math.sin(math.pi/4)
-        elif move_direction == "E":
-            self.x += self.vel
-        # elif move_direction == "SE":
-        #     self.x += self.vel*math.cos(math.pi/4)
-        #     self.y += self.vel*math.sin(math.pi/4)
-        elif move_direction == "S":
-            self.y += self.vel
-        # elif move_direction == "SW":
-        #     self.x -= self.vel*math.cos(math.pi/4)
-        #     self.y += self.vel*math.sin(math.pi/4)
-        elif move_direction == "W":
-            self.x -= self.vel
-        # elif move_direction == "NW":
-        #     self.x -= self.vel*math.cos(math.pi/4)
-        #     self.y -= self.vel*math.sin(math.pi/4)
-        else:
-            raise ValueError("Invalid move direction")
+    def move(self, X, Y):
+        self.x = X
+        self.y = Y 
         
 
 

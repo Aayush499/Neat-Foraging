@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from main import ForageTask
 
 # 1. specify config file path
-config_path = 'config-reduced-input'
+config_path = 'config-replication'
 # 2. define the path for the best network
 # winner_path = "checkpoints/biased_west/49"
 winner_path = "best.pickle"
@@ -28,10 +28,10 @@ def manual_testing(config):
     # p = neat.Checkpointer.restore_checkpoint(winner_path)
 
     # winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
-    width, height = 700, 500
+    width, height = 700, 700
     win = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Forage")
-    foragetask = ForageTask(win, width, height)
-    foragetask.manual_test(winner_net)
+    foragetask = ForageTask(win, width, height, arrangement_idx=0)
+    foragetask.manual_test(winner_net, auto=True)
     
 manual_testing(config)

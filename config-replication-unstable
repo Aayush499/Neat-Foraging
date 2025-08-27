@@ -1,7 +1,8 @@
+; #this config file has a higher mutate rate, populationthan the other
 [NEAT]
-fitness_criterion     = mean
+fitness_criterion     = max
 fitness_threshold     = 1000000
-pop_size              = 200
+pop_size              = 500
 reset_on_extinction   = False
 
 [DefaultGenome]
@@ -70,9 +71,11 @@ weight_init_stdev       = 1.0
 weight_max_value        = 50
 weight_min_value        = -50
 weight_mutate_power     = 0.1
-weight_mutate_rate      = 0.9
-; weight_replace_rate     = 0.2
-weight_replace_rate     = 0.0
+; weight_mutate_rate      = 0.9
+weight_mutate_rate      = 0.2
+
+weight_replace_rate     = 0.2
+; weight_replace_rate     = 0.0
 
 [DefaultSpeciesSet]
 ; compatibility_threshold = 2.5
@@ -81,12 +84,12 @@ compatibility_threshold = 1.0
 [DefaultStagnation]
 species_fitness_func = mean
 max_stagnation       = 10
-; species_elitism      = 5
-species_elitism         = 1    
+species_elitism      = 5
+; species_elitism         = 1    
 
 
 [DefaultReproduction]
-; elitism            = 3
-elitism            = 1  
-; survival_threshold = 0.2
-survival_threshold      = 1.0  
+elitism            = 3
+; elitism            = 1  
+survival_threshold = 0.2
+; survival_threshold      = 1.0  
