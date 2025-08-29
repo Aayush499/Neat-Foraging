@@ -8,7 +8,7 @@ import pickle
 import matplotlib.pyplot as plt
 from Forage.food import Food
 import numpy as np
-NUM_RUNS = 1 
+NUM_RUNS = 14
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
 
 class ForageTask:
@@ -23,7 +23,7 @@ class ForageTask:
         self.agent = self.game.agent
         self.pheromone = self.game.pheromones
         self.nest = self.game.nest
-        self.sparse = True  # Set to True for sparse rewards, False for dense rewards
+        self.sparse = False  # Set to True for sparse rewards, False for dense rewards
         
     def manual_test(self, net, auto=False):
         """
@@ -120,9 +120,9 @@ class ForageTask:
 
             # Display O1, O2, and O3 values on the window
             if o_values is not None:
-                O1, O2, O3 = o_values
+                O1, O2, O3, O4 = o_values
                 font = pygame.font.Font(None, 36)
-                text = font.render(f"O1: {O1:.3f}, O2: {O2:.3f}, O3: {O3:.3f}", True, (255, 255, 255))
+                text = font.render(f"O1: {O1:.3f}, O2: {O2:.3f}, O3: {O3:.3f}, O4: {O4:.3f}", True, (255, 255, 255))
                 self.game.window.blit(text, (10, 10))
 
             pygame.display.update()
@@ -182,6 +182,7 @@ class ForageTask:
         O1 = output[0]
         O2 = output[1]
         O3 = output[2]
+        O4 = output[3]
         place_pheromone = output[3] > 0.5
 
         valid = self.game.move_agent(O1, O2, O3)
@@ -189,7 +190,7 @@ class ForageTask:
             self.game.place_pheromone()
 
         if test:
-            return O1, O2, O3  # Return values for display
+            return O1, O2, O3, O4  # Return values for display
 
         return None
 
@@ -244,9 +245,9 @@ def run_neat(config):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/plateau/'))
+    p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/randy/'))
     
-    winner = p.run(eval_genomes, 300)
+    winner = p.run(eval_genomes, 900)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
@@ -272,7 +273,7 @@ def test_best_network(config):
     width, height = 900, 900
     win = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Forage")
-    foragetask = ForageTask(win, width, height, arrangement_idx=2)
+    foragetask = ForageTask(win, width, height, arrangement_idx=1)
     foragetask.test_ai(winner_net)
 
 
@@ -284,5 +285,5 @@ if __name__ == '__main__':
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    run_neat(config)
+    # run_neat(config)
     test_best_network(config)

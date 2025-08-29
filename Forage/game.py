@@ -41,22 +41,25 @@ class Game:
         self.agent = Agent(
             self.window_height // 2 , self.window_width // 2)
         self.total_food = 2
-        
+        y_offset_positive= math.sqrt(self.agent.sensor_length**2 - 90**2 )
+        y_offset_negative= -math.sqrt(self.agent.sensor_length**2 - 90**2 )
         #create 4 possible food paths, one to the north,to the east, south and west
-        food_pos_N = [(self.agent.x, self.agent.y+ (self.agent.sensor_length-.1)*i) for i in range(1, self.total_food+1)]
-        food_pos_E = [(self.agent.x+ (self.agent.sensor_length-.1)*i, self.agent.y) for i in range(1, self.total_food+1)]
-        food_pos_S = [(self.agent.x, self.agent.y- (self.agent.sensor_length-.1)*i) for i in range(1, self.total_food+1)]
-        food_pos_W = [(self.agent.x- (self.agent.sensor_length-.1)*i, self.agent.y) for i in range(1, self.total_food+1)]
-        food_pos_SW = [(self.agent.x, self.agent.y- (self.agent.sensor_length-.1)), (self.agent.x-(self.agent.sensor_length-1), self.agent.y- (self.agent.sensor_length-1))]
-        food_pos_SE = [(self.agent.x, self.agent.y- (self.agent.sensor_length-.1)), (self.agent.x+(self.agent.sensor_length-1), self.agent.y- (self.agent.sensor_length-1))]
-        food_pos_NW = [(self.agent.x, self.agent.y+ (self.agent.sensor_length-.1)), (self.agent.x-(self.agent.sensor_length-1), self.agent.y+ (self.agent.sensor_length-1))]
-        food_pos_NE = [(self.agent.x, self.agent.y+ (self.agent.sensor_length-.1)), (self.agent.x+(self.agent.sensor_length-1), self.agent.y+ (self.agent.sensor_length-1))]
-        food_pos_EN = [(self.agent.x+(self.agent.sensor_length-.1), self.agent.y), (self.agent.x+(self.agent.sensor_length-1), self.agent.y+(self.agent.sensor_length-1))]
-        food_pos_ES = [(self.agent.x+(self.agent.sensor_length-.1), self.agent.y), (self.agent.x+(self.agent.sensor_length-1), self.agent.y-(self.agent.sensor_length-1))]
-        food_pos_WN = [(self.agent.x-(self.agent.sensor_length-.1), self.agent.y), (self.agent.x-(self.agent.sensor_length-1), self.agent.y+(self.agent.sensor_length-1))]
-        food_pos_WS = [(self.agent.x-(self.agent.sensor_length-.1), self.agent.y), (self.agent.x-(self.agent.sensor_length-1), self.agent.y-(self.agent.sensor_length-1))]
+        food_pos_N = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)*i) for i in range(1, self.total_food+1)]
+        food_pos_E = [(self.agent.x+ (self.agent.sensor_length)*i, self.agent.y) for i in range(1, self.total_food+1)]
+        food_pos_S = [(self.agent.x, self.agent.y- (self.agent.sensor_length)*i) for i in range(1, self.total_food+1)]
+        food_pos_W = [(self.agent.x- (self.agent.sensor_length)*i, self.agent.y) for i in range(1, self.total_food+1)]
+        food_pos_SW = [(self.agent.x, self.agent.y- (self.agent.sensor_length)), (self.agent.x-(self.agent.sensor_length), self.agent.y- (self.agent.sensor_length))]
+        food_pos_SE = [(self.agent.x, self.agent.y- (self.agent.sensor_length)), (self.agent.x+(self.agent.sensor_length), self.agent.y- (self.agent.sensor_length))]
+        food_pos_NW = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)), (self.agent.x-(self.agent.sensor_length), self.agent.y+ (self.agent.sensor_length))]
+        food_pos_NE = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)), (self.agent.x+(self.agent.sensor_length), self.agent.y+ (self.agent.sensor_length))]
+        food_pos_EN = [(self.agent.x+(self.agent.sensor_length), self.agent.y), (self.agent.x+(self.agent.sensor_length), self.agent.y+(self.agent.sensor_length))]
+        food_pos_ES = [(self.agent.x+(self.agent.sensor_length), self.agent.y), (self.agent.x+(self.agent.sensor_length), self.agent.y-(self.agent.sensor_length))]
+        food_pos_WN = [(self.agent.x-(self.agent.sensor_length), self.agent.y), (self.agent.x-(self.agent.sensor_length), self.agent.y+(self.agent.sensor_length))]
+        food_pos_WS = [(self.agent.x-(self.agent.sensor_length), self.agent.y), (self.agent.x-(self.agent.sensor_length), self.agent.y-(self.agent.sensor_length))]
+        food_pos_N_offset = [(self.agent.x, self.agent.y+ self.agent.sensor_length), (self.agent.x+90, self.agent.y+ self.agent.sensor_length + y_offset_positive)]
+        food_pos_S_offset = [(self.agent.x, self.agent.y- self.agent.sensor_length), (self.agent.x-90, self.agent.y- self.agent.sensor_length + y_offset_negative)]
          #choose one of the 4 arrangements based on the arrangement_idx parameter
-        arrangements = [food_pos_N, food_pos_E, food_pos_S, food_pos_W, food_pos_SW, food_pos_SE, food_pos_NW, food_pos_NE, food_pos_EN, food_pos_ES, food_pos_WN, food_pos_WS]
+        arrangements = [food_pos_N, food_pos_E, food_pos_S, food_pos_W, food_pos_SW, food_pos_SE, food_pos_NW, food_pos_NE, food_pos_EN, food_pos_ES, food_pos_WN, food_pos_WS, food_pos_N_offset, food_pos_S_offset]
         # food_pos = random.choice(arrangements)
         food_pos = arrangements[arrangement_idx]
         self.food_list = [Food(x, y) for x, y in food_pos]
@@ -71,6 +74,9 @@ class Game:
         self.nest = Nest(self.agent.x, self.agent.y)
         self.window = window
         self.current_direction = ""
+
+        self.discount_factor = 0.999
+        self.carry_time = 0
 
     def _draw_score(self):
         score_text = self.SCORE_FONT.render(
@@ -93,26 +99,34 @@ class Game:
        
         agent = self.agent
         nest = self.nest
-        collision_threshold = 1
+        collision_threshold = 0.1
         if not agent.carrying_food:
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                 # if dist < agent.radius + food.radius:
                 if dist < collision_threshold:
-                    self.score += 1
+                    self.score += 0.5
                     
                     agent.carrying_food = True
+                    self.carry_time = 0
                     self.food_list.remove(food)
                     break
         else:
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
+            self.carry_time += 1
             # if dist < agent.radius + nest.radius:
             if dist < collision_threshold:
-                self.score += 2
+               
+                self.score += 2 + math.pow(self.discount_factor , self.carry_time)
+
                 self.food_collected += 1
                 agent.carrying_food = False
                 self.TIME_BONUS += 2*self.agent.sensor_length/self.agent.vel  
                 self.optimalTime += self.TIME_BONUS
+            
+        
+
+
                 
             
    
@@ -147,8 +161,8 @@ class Game:
                 max_strength = 0
                 for pheromone in self.pheromones:
                     dist = ((agent.x - pheromone.x) ** 2 + (agent.y - pheromone.y) ** 2) ** 0.5
-                    if check_quadrant(agent, pheromone) == i and dist < agent.sensor_length:
-                        agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength*(1 - dist/agent.sensor_length))
+                    if check_quadrant(agent, pheromone) == i and dist <= agent.sensor_length:
+                        agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength*(1 - dist/(agent.sensor_length+.1)))
                         # if pheromone.strength > max_strength:
                         #     max_strength = pheromone.strength
                         #     agent.sensors[i][j] = max_strength*(1 - dist/agent.sensor_length)  
@@ -158,18 +172,25 @@ class Game:
             # Check for food
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
-                if check_quadrant(agent, food) == i and dist < agent.sensor_length:
+                if check_quadrant(agent, food) == i and dist <= agent.sensor_length:
                     
-                    agent.sensors[i][j+1] = max(1 - (dist / agent.sensor_length), agent.sensors[i][j+1]) #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
+                    agent.sensors[i][j+1] = max(1 - (dist / (agent.sensor_length+.1)), agent.sensors[i][j+1]) #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
 
             
             #check nest
             if agent.nest_receptor:
                 agent.sensors[i][j+2] = 0  # Default value for no nest detected
                 dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
-                if check_quadrant(agent, nest) == i and dist < agent.sensor_length:
+                if check_quadrant(agent, nest) == i and dist <= agent.sensor_length:
 
-                    agent.sensors[i][j+2] = 1 - (dist / agent.sensor_length)
+                    agent.sensors[i][j+2] = 1 - (dist / agent.sensor_length + .1)
+
+        #check if all sensors are zero, if so , turn discount factor to .1
+        all_zero = all(all(segment == 0 for segment in sensor) for sensor in agent.sensors)
+        if all_zero:
+            self.optimalTime = 0
+        
+
 
     def update_pheromones(self):
         for i in range(len(self.pheromones)):

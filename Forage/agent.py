@@ -16,10 +16,10 @@ class Agent:
         self.sensor_segments = 1
         self.carrying_food = False
         self.radius = 10
-        self.sensor_length = 100
+        self.sensor_length = 99
         self.color = BLUE
        
-        self.vel = 3
+        self.vel = 100
         #keep a variable that tells us what types of sensors we have 
         self.nest_receptor = False
         self.food_receptor = True

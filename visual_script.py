@@ -7,7 +7,7 @@ import os
 import visualize
 
 # Load config and genome.
-config_file = 'config-replication-unstable'
+config_file = 'config-replication-plateau'
 genome_file = 'best.pickle'
 
 config = neat.Config(
