@@ -181,17 +181,12 @@ class ForageTask:
 
         O1 = output[0]
         O2 = output[1]
-        O3 = output[2]
-        O4 = output[3]
-        place_pheromone = output[3] > 0.5
+        
 
-        valid = self.game.move_agent(O1, O2, O3)
-        if place_pheromone:
-            self.game.place_pheromone()
+        valid = self.game.move_agent(O1, O2)
 
         if test:
-            return O1, O2, O3, O4  # Return values for display
-
+            return O1, O2
         return None
 
 
@@ -245,9 +240,9 @@ def run_neat(config):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/randy/'))
+    p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/simple/'))
     
-    winner = p.run(eval_genomes, 900)
+    winner = p.run(eval_genomes, 400)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
@@ -285,5 +280,5 @@ if __name__ == '__main__':
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    # run_neat(config)
+    run_neat(config)
     test_best_network(config)

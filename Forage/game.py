@@ -135,63 +135,73 @@ class Game:
         agent = self.agent
         nest = self.nest
         for i in range(agent.sensor_count):
-            angle = 2 * math.pi * i / agent.sensor_count
-            def check_quadrant(agent, object):
+        #     angle = 2 * math.pi * i / agent.sensor_count
+        #     def check_quadrant(agent, object):
 
-                #calculate distance between agent and object
+        #         #calculate distance between agent and object
 
-                dist = ((agent.x - object.x) ** 2 + (agent.y - object.y) ** 2) ** 0.5
-                dx = object.x - agent.x
-                dy = object.y - agent.y
-                angle_to_food = math.atan2(dy, dx)            # Returns angle in radians
+        #         dist = ((agent.x - object.x) ** 2 + (agent.y - object.y) ** 2) ** 0.5
+        #         dx = object.x - agent.x
+        #         dy = object.y - agent.y
+        #         angle_to_food = math.atan2(dy, dx)            # Returns angle in radians
 
-                relative_angle = (angle_to_food - agent.theta) % (2 * math.pi)   # Ensures value between 0 and 2π
+        #         relative_angle = (angle_to_food - agent.theta) % (2 * math.pi)   # Ensures value between 0 and 2π
 
-                bin_width = (2 * math.pi) / agent.sensor_count
-                sensor_index = int(relative_angle // bin_width)    # Integer division places angle into a sensor’s bin
-                return sensor_index
+        #         bin_width = (2 * math.pi) / agent.sensor_count
+        #         sensor_index = int(relative_angle // bin_width)    # Integer division places angle into a sensor’s bin
+        #         return sensor_index
 
-            for j in range(agent.sensor_segments):
+        #     for j in range(agent.sensor_segments):
 
-                # Reset sensor data
-                agent.sensors[i][j] = 0
+        #         # Reset sensor data
+        #         agent.sensors[i][j] = 0
                  
 
-                #check pheromones
-                max_strength = 0
-                for pheromone in self.pheromones:
-                    dist = ((agent.x - pheromone.x) ** 2 + (agent.y - pheromone.y) ** 2) ** 0.5
-                    if check_quadrant(agent, pheromone) == i and dist <= agent.sensor_length:
-                        agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength*(1 - dist/(agent.sensor_length+.1)))
-                        # if pheromone.strength > max_strength:
-                        #     max_strength = pheromone.strength
-                        #     agent.sensors[i][j] = max_strength*(1 - dist/agent.sensor_length)  
+        #         #check pheromones
+        #         max_strength = 0
+        #         for pheromone in self.pheromones:
+        #             dist = ((agent.x - pheromone.x) ** 2 + (agent.y - pheromone.y) ** 2) ** 0.5
+        #             if check_quadrant(agent, pheromone) == i and dist <= agent.sensor_length:
+        #                 agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength*(1 - dist/(agent.sensor_length+.1)))
+        #                 # if pheromone.strength > max_strength:
+        #                 #     max_strength = pheromone.strength
+        #                 #     agent.sensors[i][j] = max_strength*(1 - dist/agent.sensor_length)  
                             
             
-            agent.sensors[i][j+1] = 0  # Default value for no food detected
-            # Check for food
-            for food in self.food_list:
-                dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
-                if check_quadrant(agent, food) == i and dist <= agent.sensor_length:
+        #     agent.sensors[i][j+1] = 0  # Default value for no food detected
+        #     # Check for food
+        #     for food in self.food_list:
+        #         dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
+        #         if check_quadrant(agent, food) == i and dist <= agent.sensor_length:
                     
-                    agent.sensors[i][j+1] = max(1 - (dist / (agent.sensor_length+.1)), agent.sensors[i][j+1]) #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
+        #             agent.sensors[i][j+1] = max(1 - (dist / (agent.sensor_length+.1)), agent.sensors[i][j+1]) #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
 
             
-            #check nest
-            if agent.nest_receptor:
-                agent.sensors[i][j+2] = 0  # Default value for no nest detected
-                dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
-                if check_quadrant(agent, nest) == i and dist <= agent.sensor_length:
+        #     #check nest
+        #     if agent.nest_receptor:
+        #         agent.sensors[i][j+2] = 0  # Default value for no nest detected
+        #         dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
+        #         if check_quadrant(agent, nest) == i and dist <= agent.sensor_length:
 
-                    agent.sensors[i][j+2] = 1 - (dist / agent.sensor_length + .1)
+        #             agent.sensors[i][j+2] = 1 - (dist / agent.sensor_length + .1)
 
-        #check if all sensors are zero, if so , turn discount factor to .1
-        all_zero = all(all(segment == 0 for segment in sensor) for sensor in agent.sensors)
-        if all_zero:
-            self.optimalTime = 0
-        
-
-
+        # #check if all sensors are zero, if so , turn discount factor to .1
+        # all_zero = all(all(segment == 0 for segment in sensor) for sensor in agent.sensors)
+        # if all_zero:
+        #     self.optimalTime = 0
+            mini = 1000
+             
+            for food in self.food_list:
+                dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
+                if mini <= dist:
+                    continue
+                #insert dist into sens
+                mini = dist
+                agent.sensors[i][0][0] = mini #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
+                #calculate angle difference between food and agent.theta
+                angle_to_food = math.atan2(food.y - agent.y, food.x - agent.x)
+                relative_angle = (angle_to_food - agent.theta) % (2 * math.pi)
+                agent.sensors[i][1][0] = relative_angle
     def update_pheromones(self):
         for i in range(len(self.pheromones)):
             strength =   self.pheromones[i].strength
@@ -259,14 +269,17 @@ class Game:
 
 
 
-    def move_agent(self, O1, O2, O3): 
+    def move_agent(self, O1, O2): 
 
-        self.agent.theta = self.agent.theta + math.pi * O3
-        X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) + self.agent.vel * O2* math.cos(self.agent.theta + math.pi/2)
-        Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta) + self.agent.vel * O2* math.sin(self.agent.theta + math.pi/2)
+        self.agent.theta = self.agent.theta + math.pi * O2
+        # X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) + self.agent.vel * O2* math.cos(self.agent.theta + math.pi/2)
+        # Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta) + self.agent.vel * O2* math.sin(self.agent.theta + math.pi/2)
         #check whether the agent hits the borders of the screen is move is executed
         #movement directions are N, NE, E, SE, S, SW, W, NW
         #if it hits a border, return False else move the agent and return True
+        #find new x and y component after moving in new theta direction
+        X = self.agent.x + O1 * self.agent.vel * math.cos(self.agent.theta)
+        Y = self.agent.y + O1 * self.agent.vel * math.sin(self.agent.theta)
 
         if X < 0 or X > self.window_width or Y < 0 or Y > self.window_height:
             return False
