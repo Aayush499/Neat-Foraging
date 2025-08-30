@@ -247,7 +247,7 @@ def run_neat(config):
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/randy/'))
     
-    winner = p.run(eval_genomes, 900)
+    winner = p.run(eval_genomes, 500)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
@@ -285,5 +285,5 @@ if __name__ == '__main__':
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    # run_neat(config)
+    run_neat(config)
     test_best_network(config)
