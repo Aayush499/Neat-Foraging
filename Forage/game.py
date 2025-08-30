@@ -100,29 +100,29 @@ class Game:
         agent = self.agent
         nest = self.nest
         collision_threshold = 0.1
-        if not agent.carrying_food:
+        if True:
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                 # if dist < agent.radius + food.radius:
                 if dist < collision_threshold:
-                    self.score += 0.5
+                    self.score += 1
                     
-                    agent.carrying_food = True
+                    # agent.carrying_food = True
                     self.carry_time = 0
                     self.food_list.remove(food)
                     break
-        else:
-            dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
-            self.carry_time += 1
-            # if dist < agent.radius + nest.radius:
-            if dist < collision_threshold:
+        # else:
+        #     dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
+        #     self.carry_time += 1
+        #     # if dist < agent.radius + nest.radius:
+        #     if dist < collision_threshold:
                
-                self.score += 2 + math.pow(self.discount_factor , self.carry_time)
+        #         # self.score += 2 + math.pow(self.discount_factor , self.carry_time)
 
-                self.food_collected += 1
-                agent.carrying_food = False
-                self.TIME_BONUS += 2*self.agent.sensor_length/self.agent.vel  
-                self.optimalTime += self.TIME_BONUS
+        #         self.food_collected += 1
+        #         # agent.carrying_food = False
+        #         self.TIME_BONUS += 2*self.agent.sensor_length/self.agent.vel  
+        #         self.optimalTime += self.TIME_BONUS
             
         
 
@@ -197,11 +197,11 @@ class Game:
                     continue
                 #insert dist into sens
                 mini = dist
-                agent.sensors[i][0][0] = mini #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
+                agent.sensors[i][0] = mini #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
                 #calculate angle difference between food and agent.theta
                 angle_to_food = math.atan2(food.y - agent.y, food.x - agent.x)
                 relative_angle = (angle_to_food - agent.theta) % (2 * math.pi)
-                agent.sensors[i][1][0] = relative_angle
+                agent.sensors[i][1] = relative_angle
     def update_pheromones(self):
         for i in range(len(self.pheromones)):
             strength =   self.pheromones[i].strength
