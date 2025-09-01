@@ -10,7 +10,7 @@ from Forage.food import Food
 import numpy as np
 NUM_RUNS = 14
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
-
+chosen_arrangement = [True, True, False, True, False, True, False, False, False, False, True, True, True, True, False, False]
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
         if window is None:
@@ -83,8 +83,8 @@ class ForageTask:
             O2 = output[1]
             O3 = output[2]
             O4 = output[3]    
-            place_pheromone = O4 > 0.5  # Whether it wants to place pheromones
-            
+            place_pheromone = O4 > -0.5  # Whether it wants to place pheromones
+
             # Display network's decision
             # print(f"Predicted Move: {predicted_move}, Pheromone: {place_pheromone}")
 
@@ -183,7 +183,7 @@ class ForageTask:
         O2 = output[1]
         O3 = output[2]
         O4 = output[3]
-        place_pheromone = output[3] > 0.5
+        place_pheromone = output[3] > 0
 
         valid = self.game.move_agent(O1, O2, O3)
         if place_pheromone:
@@ -247,7 +247,7 @@ def run_neat(config):
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/randy/'))
     
-    winner = p.run(eval_genomes, 500)
+    winner = p.run(eval_genomes, 600)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
@@ -268,13 +268,14 @@ def run_neat(config):
 def test_best_network(config):
     with open("best.pickle", "rb") as f:
         winner = pickle.load(f)
-    winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+    for i in range(NUM_RUNS):
+        winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
 
-    width, height = 900, 900
-    win = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Forage")
-    foragetask = ForageTask(win, width, height, arrangement_idx=1)
-    foragetask.test_ai(winner_net)
+        width, height = 900, 900
+        win = pygame.display.set_mode((width, height))
+        pygame.display.set_caption("Forage")
+        foragetask = ForageTask(win, width, height, arrangement_idx=i)
+        foragetask.test_ai(winner_net)
 
 
 if __name__ == '__main__':
@@ -285,5 +286,5 @@ if __name__ == '__main__':
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    run_neat(config)
+    # run_neat(config)
     test_best_network(config)

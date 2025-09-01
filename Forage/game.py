@@ -59,7 +59,9 @@ class Game:
         food_pos_N_offset = [(self.agent.x, self.agent.y+ self.agent.sensor_length), (self.agent.x+90, self.agent.y+ self.agent.sensor_length + y_offset_positive)]
         food_pos_S_offset = [(self.agent.x, self.agent.y- self.agent.sensor_length), (self.agent.x-90, self.agent.y- self.agent.sensor_length + y_offset_negative)]
          #choose one of the 4 arrangements based on the arrangement_idx parameter
-        arrangements = [food_pos_N, food_pos_E, food_pos_S, food_pos_W, food_pos_SW, food_pos_SE, food_pos_NW, food_pos_NE, food_pos_EN, food_pos_ES, food_pos_WN, food_pos_WS, food_pos_N_offset, food_pos_S_offset]
+        food_pos_diagonal_right = [(self.agent.x+90, self.agent.y + y_offset_positive), (self.agent.x+90, self.agent.y + y_offset_positive + self.agent.sensor_length)] 
+        food_pos_diagonal_left = [(self.agent.x-90, self.agent.y + y_offset_positive), (self.agent.x-90, self.agent.y + y_offset_positive + self.agent.sensor_length)] 
+        arrangements = [food_pos_diagonal_right , food_pos_diagonal_left, food_pos_N, food_pos_E, food_pos_S, food_pos_W, food_pos_SW, food_pos_SE, food_pos_NW, food_pos_NE, food_pos_EN, food_pos_ES, food_pos_WN, food_pos_WS, food_pos_N_offset, food_pos_S_offset]
         # food_pos = random.choice(arrangements)
         food_pos = arrangements[arrangement_idx]
         self.food_list = [Food(x, y) for x, y in food_pos]
@@ -75,8 +77,9 @@ class Game:
         self.window = window
         self.current_direction = ""
 
-        self.discount_factor = 0.999
+        self.discount_factor = 0.90
         self.carry_time = 0
+        self.food_value = 1
 
     def _draw_score(self):
         score_text = self.SCORE_FONT.render(
@@ -105,7 +108,8 @@ class Game:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                 # if dist < agent.radius + food.radius:
                 if dist < collision_threshold:
-                    self.score += 0.5
+                    self.food_value = 1
+                    self.score += self.food_value
                     
                     agent.carrying_food = True
                     self.carry_time = 0
@@ -114,10 +118,12 @@ class Game:
         else:
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
             self.carry_time += 1
+            self.score -= self.food_value*(1-self.discount_factor)
+            self.food_value *= self.discount_factor
             # if dist < agent.radius + nest.radius:
             if dist < collision_threshold:
                
-                self.score += 2 + math.pow(self.discount_factor , self.carry_time)
+                self.score += 2 
 
                 self.food_collected += 1
                 agent.carrying_food = False
@@ -188,7 +194,7 @@ class Game:
         #check if all sensors are zero, if so , turn discount factor to .1
         all_zero = all(all(segment == 0 for segment in sensor) for sensor in agent.sensors)
         if all_zero:
-            self.optimalTime = 0
+            self.discount_factor = 0.1
         
 
 
@@ -196,8 +202,8 @@ class Game:
         for i in range(len(self.pheromones)):
             strength =   self.pheromones[i].strength
             # strength -= 1.0/self.optimalTime
-            strength *= .99
-            if strength < 0.1:
+            strength *= .75
+            if strength < .001:
                 self.pheromones[i] = None
             else:
                 self.pheromones[i].strength = strength
