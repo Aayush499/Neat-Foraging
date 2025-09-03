@@ -40,33 +40,49 @@ class Game:
 
         self.agent = Agent(
             self.window_height // 2 , self.window_width // 2)
-        self.total_food = 2
-        y_offset_positive= math.sqrt(self.agent.sensor_length**2 - 90**2 )
-        y_offset_negative= -math.sqrt(self.agent.sensor_length**2 - 90**2 )
-        #create 4 possible food paths, one to the north,to the east, south and west
-        food_pos_N = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)*i) for i in range(1, self.total_food+1)]
-        food_pos_E = [(self.agent.x+ (self.agent.sensor_length)*i, self.agent.y) for i in range(1, self.total_food+1)]
-        food_pos_S = [(self.agent.x, self.agent.y- (self.agent.sensor_length)*i) for i in range(1, self.total_food+1)]
-        food_pos_W = [(self.agent.x- (self.agent.sensor_length)*i, self.agent.y) for i in range(1, self.total_food+1)]
-        food_pos_SW = [(self.agent.x, self.agent.y- (self.agent.sensor_length)), (self.agent.x-(self.agent.sensor_length), self.agent.y- (self.agent.sensor_length))]
-        food_pos_SE = [(self.agent.x, self.agent.y- (self.agent.sensor_length)), (self.agent.x+(self.agent.sensor_length), self.agent.y- (self.agent.sensor_length))]
-        food_pos_NW = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)), (self.agent.x-(self.agent.sensor_length), self.agent.y+ (self.agent.sensor_length))]
-        food_pos_NE = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)), (self.agent.x+(self.agent.sensor_length), self.agent.y+ (self.agent.sensor_length))]
-        food_pos_EN = [(self.agent.x+(self.agent.sensor_length), self.agent.y), (self.agent.x+(self.agent.sensor_length), self.agent.y+(self.agent.sensor_length))]
-        food_pos_ES = [(self.agent.x+(self.agent.sensor_length), self.agent.y), (self.agent.x+(self.agent.sensor_length), self.agent.y-(self.agent.sensor_length))]
-        food_pos_WN = [(self.agent.x-(self.agent.sensor_length), self.agent.y), (self.agent.x-(self.agent.sensor_length), self.agent.y+(self.agent.sensor_length))]
-        food_pos_WS = [(self.agent.x-(self.agent.sensor_length), self.agent.y), (self.agent.x-(self.agent.sensor_length), self.agent.y-(self.agent.sensor_length))]
-        food_pos_N_offset = [(self.agent.x, self.agent.y+ self.agent.sensor_length), (self.agent.x+90, self.agent.y+ self.agent.sensor_length + y_offset_positive)]
-        food_pos_S_offset = [(self.agent.x, self.agent.y- self.agent.sensor_length), (self.agent.x-90, self.agent.y- self.agent.sensor_length + y_offset_negative)]
-         #choose one of the 4 arrangements based on the arrangement_idx parameter
-        arrangements = [food_pos_N, food_pos_E, food_pos_S, food_pos_W, food_pos_SW, food_pos_SE, food_pos_NW, food_pos_NE, food_pos_EN, food_pos_ES, food_pos_WN, food_pos_WS, food_pos_N_offset, food_pos_S_offset]
+        self.total_food = 5
+        # y_offset_positive= math.sqrt(self.agent.sensor_length**2 - 90**2 ) - 0.1
+        # y_offset_negative= -math.sqrt(self.agent.sensor_length**2 - 90**2 ) + 0.1
+        # #create 4 possible food paths, one to the north,to the east, south and west
+        # food_pos_N = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)*i) for i in range(1, self.total_food+1)]
+        # food_pos_E = [(self.agent.x+ (self.agent.sensor_length)*i, self.agent.y) for i in range(1, self.total_food+1)]
+        # food_pos_S = [(self.agent.x, self.agent.y- (self.agent.sensor_length)*i) for i in range(1, self.total_food+1)]
+        # food_pos_W = [(self.agent.x- (self.agent.sensor_length)*i, self.agent.y) for i in range(1, self.total_food+1)]
+        # food_pos_SW = [(self.agent.x, self.agent.y- (self.agent.sensor_length)), (self.agent.x-(self.agent.sensor_length), self.agent.y- (self.agent.sensor_length))]
+        # food_pos_SE = [(self.agent.x, self.agent.y- (self.agent.sensor_length)), (self.agent.x+(self.agent.sensor_length), self.agent.y- (self.agent.sensor_length))]
+        # food_pos_NW = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)), (self.agent.x-(self.agent.sensor_length), self.agent.y+ (self.agent.sensor_length))]
+        # food_pos_NE = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)), (self.agent.x+(self.agent.sensor_length), self.agent.y+ (self.agent.sensor_length))]
+        # food_pos_EN = [(self.agent.x+(self.agent.sensor_length), self.agent.y), (self.agent.x+(self.agent.sensor_length), self.agent.y+(self.agent.sensor_length))]
+        # food_pos_ES = [(self.agent.x+(self.agent.sensor_length), self.agent.y), (self.agent.x+(self.agent.sensor_length), self.agent.y-(self.agent.sensor_length))]
+        # food_pos_WN = [(self.agent.x-(self.agent.sensor_length), self.agent.y), (self.agent.x-(self.agent.sensor_length), self.agent.y+(self.agent.sensor_length))]
+        # food_pos_WS = [(self.agent.x-(self.agent.sensor_length), self.agent.y), (self.agent.x-(self.agent.sensor_length), self.agent.y-(self.agent.sensor_length))]
+        # food_pos_N_offset = [(self.agent.x, self.agent.y+ self.agent.sensor_length), (self.agent.x+90, self.agent.y+ self.agent.sensor_length + y_offset_positive)]
+        # food_pos_S_offset = [(self.agent.x, self.agent.y- self.agent.sensor_length), (self.agent.x-90, self.agent.y- self.agent.sensor_length + y_offset_negative)]
+        #  #choose one of the 4 arrangements based on the arrangement_idx parameter
+        # food_pos_diagonal_right = [(self.agent.x+90, self.agent.y + y_offset_positive), (self.agent.x+90, self.agent.y + y_offset_positive + self.agent.sensor_length)] 
+        # food_pos_diagonal_left = [(self.agent.x-90, self.agent.y + y_offset_positive), (self.agent.x-90, self.agent.y + y_offset_positive + self.agent.sensor_length)] 
+        # food_pos_diagonal_left_neg = [(self.agent.x-90, self.agent.y + y_offset_negative), (self.agent.x-90, self.agent.y + y_offset_negative - self.agent.sensor_length)] 
+        # food_pos_diagonal_right_neg = [(self.agent.x+90, self.agent.y + y_offset_negative), (self.agent.x+90, self.agent.y + y_offset_negative - self.agent.sensor_length)]
+        # arrangements = [food_pos_N, food_pos_E, food_pos_diagonal_right_neg, food_pos_diagonal_left_neg, food_pos_diagonal_right , food_pos_diagonal_left,   food_pos_S, food_pos_W, food_pos_SW, food_pos_SE, food_pos_NW, food_pos_NE, food_pos_EN, food_pos_ES, food_pos_WN, food_pos_WS, food_pos_N_offset, food_pos_S_offset]
         # food_pos = random.choice(arrangements)
-        food_pos = arrangements[arrangement_idx]
+        food_pos = []
+        buffer_distance = 25  # minimum Euclidean distance from agent (prevents spawn overlap)
+
+        while len(food_pos) < self.total_food:
+            x = random.randint(0, self.window_width)
+            y = random.randint(0, self.window_height)
+            # Prevent food from spawning on top of the agent
+            dist = ((self.agent.x - x)**2 + (self.agent.y - y)**2)**0.5
+            if dist > buffer_distance:
+                food_pos.append((x, y))
+
+        # self.food_list = [Food(x, y) for x, y in food_pos]
+        # food_pos = arrangements[arrangement_idx]
         self.food_list = [Food(x, y) for x, y in food_pos]
+        
 
-
-        self.optimalTime = 2*self.agent.sensor_length/self.agent.vel + 2 +20
-        self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
+        self.optimalTime = 250
+        # self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
         
         self.score = 0
         self.food_collected = 0
@@ -99,17 +115,19 @@ class Game:
        
         agent = self.agent
         nest = self.nest
-        collision_threshold = 0.1
+        collision_threshold = self.agent.radius + 5
         if True:
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                 # if dist < agent.radius + food.radius:
                 if dist < collision_threshold:
                     self.score += 1
-                    
+                    self.agent.x = food.x
+                    self.agent.y = food.y
                     # agent.carrying_food = True
                     self.carry_time = 0
                     self.food_list.remove(food)
+                    
                     break
         # else:
         #     dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5

@@ -8,7 +8,7 @@ import pickle
 import matplotlib.pyplot as plt
 from Forage.food import Food
 import numpy as np
-NUM_RUNS = 14
+NUM_RUNS = 18
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
 gsteps =0
 class ForageTask:
@@ -33,7 +33,7 @@ class ForageTask:
         run = True
         chk = False
         log = 0
-        while run:
+        while run :
             clock.tick(60)
             self.game.loop()
 
@@ -102,7 +102,7 @@ class ForageTask:
         clock = pygame.time.Clock()
         run = True
         steps = 0
-        while run:
+        while run and self.game.score < self.game.total_food and steps < self.game.optimalTime:
             clock.tick(60)
             game_info = self.game.loop()
             for event in pygame.event.get():
@@ -238,7 +238,7 @@ def run_neat(config):
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/simple/'))
     
-    winner = p.run(eval_genomes, 400)
+    winner = p.run(eval_genomes, 100)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 

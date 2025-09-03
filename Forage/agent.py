@@ -19,7 +19,7 @@ class Agent:
         self.sensor_length = 99
         self.color = BLUE
        
-        self.vel = 3
+        self.vel = 10
         #keep a variable that tells us what types of sensors we have 
         self.nest_receptor = False
         self.food_receptor = True
