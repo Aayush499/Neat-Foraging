@@ -1,7 +1,7 @@
 [NEAT]
 fitness_criterion     = max
 fitness_threshold     = 84
-pop_size              = 200
+pop_size              = 300
 reset_on_extinction   = True
 
 [DefaultGenome]
@@ -40,7 +40,7 @@ conn_delete_prob        = 0.2
 
 # connection enable options
 enabled_default         = True
-enabled_mutate_rate     = 0.5
+enabled_mutate_rate     = 0.8
 
 feed_forward            = True
 initial_connection      = full_nodirect
@@ -71,9 +71,9 @@ weight_max_value        = 2.5
 weight_min_value        = -2.5
 weight_mutate_power     = 0.1
 ; weight_mutate_rate      = 0.9
-weight_mutate_rate      = 0.5
+weight_mutate_rate      = 0.9
 
-weight_replace_rate     = 0.1
+weight_replace_rate     = 0.4
 ; weight_replace_rate     = 0.4
 
 [DefaultSpeciesSet]
@@ -82,7 +82,7 @@ compatibility_threshold = 2
 
 [DefaultStagnation]
 species_fitness_func = max
-max_stagnation       = 20
+max_stagnation       = 25
 ; species_elitism      = 5
 species_elitism         = 1 
 

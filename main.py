@@ -8,9 +8,12 @@ import pickle
 import matplotlib.pyplot as plt
 from Forage.food import Food
 import numpy as np
-NUM_RUNS = 14
+NUM_RUNS = 18
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
-chosen_arrangement = [True, True, False, True, False, True, False, False, False, False, True, True, True, True, False, False]
+chosen_arrangement = [True] *18
+chosen_arrangement = [False, True, True, True, True, True, False, True, False, False, False, False, True, True, True, True, False, False, ]
+chosen_arrangement = [False, False, True, True, True, True, False, False, False, False, False, False, False, False, False, False, False, False, ]
+
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
         if window is None:
@@ -218,6 +221,11 @@ def eval_genomes(genomes, config):
         print(round(i/len(genomes) * 100), end=" ")
         genome.fitness = 0
         for run in range(NUM_RUNS):
+           
+            if not chosen_arrangement[run]:
+                continue
+            
+
             forage = ForageTask(win, width, height, arrangement_idx=run)
 
             force_quit = forage.train_ai(genome, config, draw)
@@ -269,6 +277,8 @@ def test_best_network(config):
     with open("best.pickle", "rb") as f:
         winner = pickle.load(f)
     for i in range(NUM_RUNS):
+        if not chosen_arrangement[i]:
+            continue
         winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
 
         width, height = 900, 900

@@ -41,8 +41,8 @@ class Game:
         self.agent = Agent(
             self.window_height // 2 , self.window_width // 2)
         self.total_food = 2
-        y_offset_positive= math.sqrt(self.agent.sensor_length**2 - 90**2 )
-        y_offset_negative= -math.sqrt(self.agent.sensor_length**2 - 90**2 )
+        y_offset_positive= math.sqrt(self.agent.sensor_length**2 - 90**2 ) - 0.1
+        y_offset_negative= -math.sqrt(self.agent.sensor_length**2 - 90**2 ) + 0.1
         #create 4 possible food paths, one to the north,to the east, south and west
         food_pos_N = [(self.agent.x, self.agent.y+ (self.agent.sensor_length)*i) for i in range(1, self.total_food+1)]
         food_pos_E = [(self.agent.x+ (self.agent.sensor_length)*i, self.agent.y) for i in range(1, self.total_food+1)]
@@ -61,7 +61,9 @@ class Game:
          #choose one of the 4 arrangements based on the arrangement_idx parameter
         food_pos_diagonal_right = [(self.agent.x+90, self.agent.y + y_offset_positive), (self.agent.x+90, self.agent.y + y_offset_positive + self.agent.sensor_length)] 
         food_pos_diagonal_left = [(self.agent.x-90, self.agent.y + y_offset_positive), (self.agent.x-90, self.agent.y + y_offset_positive + self.agent.sensor_length)] 
-        arrangements = [food_pos_diagonal_right , food_pos_diagonal_left, food_pos_N, food_pos_E, food_pos_S, food_pos_W, food_pos_SW, food_pos_SE, food_pos_NW, food_pos_NE, food_pos_EN, food_pos_ES, food_pos_WN, food_pos_WS, food_pos_N_offset, food_pos_S_offset]
+        food_pos_diagonal_left_neg = [(self.agent.x-90, self.agent.y + y_offset_negative), (self.agent.x-90, self.agent.y + y_offset_negative - self.agent.sensor_length)] 
+        food_pos_diagonal_right_neg = [(self.agent.x+90, self.agent.y + y_offset_negative), (self.agent.x+90, self.agent.y + y_offset_negative - self.agent.sensor_length)]
+        arrangements = [food_pos_N, food_pos_E, food_pos_diagonal_right_neg, food_pos_diagonal_left_neg, food_pos_diagonal_right , food_pos_diagonal_left,   food_pos_S, food_pos_W, food_pos_SW, food_pos_SE, food_pos_NW, food_pos_NE, food_pos_EN, food_pos_ES, food_pos_WN, food_pos_WS, food_pos_N_offset, food_pos_S_offset]
         # food_pos = random.choice(arrangements)
         food_pos = arrangements[arrangement_idx]
         self.food_list = [Food(x, y) for x, y in food_pos]
@@ -102,7 +104,7 @@ class Game:
        
         agent = self.agent
         nest = self.nest
-        collision_threshold = 0.1
+        collision_threshold = 2
         if not agent.carrying_food:
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
@@ -110,10 +112,12 @@ class Game:
                 if dist < collision_threshold:
                     self.food_value = 1
                     self.score += self.food_value
-                    
+                    self.agent.x = food.x
+                    self.agent.y = food.y
                     agent.carrying_food = True
                     self.carry_time = 0
                     self.food_list.remove(food)
+                    
                     break
         else:
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
@@ -167,6 +171,9 @@ class Game:
                 max_strength = 0
                 for pheromone in self.pheromones:
                     dist = ((agent.x - pheromone.x) ** 2 + (agent.y - pheromone.y) ** 2) ** 0.5
+                    # if len(self.food_list) == 1:
+                    #     print("Hello")
+
                     if check_quadrant(agent, pheromone) == i and dist <= agent.sensor_length:
                         agent.sensors[i][j] = max(agent.sensors[i][j], pheromone.strength*(1 - dist/(agent.sensor_length+.1)))
                         # if pheromone.strength > max_strength:
@@ -193,8 +200,8 @@ class Game:
 
         #check if all sensors are zero, if so , turn discount factor to .1
         all_zero = all(all(segment == 0 for segment in sensor) for sensor in agent.sensors)
-        if all_zero:
-            self.discount_factor = 0.1
+        # if all_zero:
+            # self.score += -.001
         
 
 
@@ -202,8 +209,8 @@ class Game:
         for i in range(len(self.pheromones)):
             strength =   self.pheromones[i].strength
             # strength -= 1.0/self.optimalTime
-            strength *= .75
-            if strength < .001:
+            strength *= .96
+            if strength < .1:
                 self.pheromones[i] = None
             else:
                 self.pheromones[i].strength = strength
