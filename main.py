@@ -11,8 +11,8 @@ import numpy as np
 NUM_RUNS = 18
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
 chosen_arrangement = [True] *18
-chosen_arrangement = [False, True, True, True, True, True, False, True, False, False, False, False, True, True, True, True, False, False, ]
-chosen_arrangement = [False, False, True, True, True, True, False, False, False, False, False, False, False, False, False, False, False, False, ]
+# chosen_arrangement = [False, True, True, True, True, True, False, True, False, False, False, False, True, True, True, True, False, False, ]
+# chosen_arrangement = [False, False, True, True, True, True, False, False, False, False, False, False, False, False, False, False, False, False, ]
 
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
@@ -255,7 +255,7 @@ def run_neat(config):
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/randy/'))
     
-    winner = p.run(eval_genomes, 600)
+    winner = p.run(eval_genomes, 500)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
@@ -296,5 +296,5 @@ if __name__ == '__main__':
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    # run_neat(config)
+    run_neat(config)
     test_best_network(config)
