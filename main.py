@@ -10,7 +10,8 @@ from Forage.food import Food
 import numpy as np
 NUM_RUNS = 18
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
-chosen_arrangement = [True] *18
+chosen_arrangement = [False] *18
+chosen_arrangement[6] = True
 # chosen_arrangement = [False, True, True, True, True, True, False, True, False, False, False, False, True, True, True, True, False, False, ]
 # chosen_arrangement = [False, False, True, True, True, True, False, False, False, False, False, False, False, False, False, False, False, False, ]
 
@@ -101,34 +102,63 @@ class ForageTask:
 
 
 
-    def test_ai(self, net):
-        """
-        Test the AI 
-        """
+    # def test_ai(self, net):
+    #     """
+    #     Test the AI 
+    #     """
+    #     clock = pygame.time.Clock()
+    #     run = True
+    #     while run:
+    #         clock.tick(60)
+    #         game_info = self.game.loop()
+
+    #         for event in pygame.event.get():
+    #             if event.type == pygame.QUIT:
+    #                 run = False
+    #                 break
+                
+    #         # Move agent; retrieve outputs for display
+    #         o_values = self.move_agent(net, test=True)  # See edit below for move_agent!
+
+    #         self.game.draw(draw_score=True)
+
+    #         # Display O1, O2, and O3 values on the window
+    #         if o_values is not None:
+    #             O1, O2, O3, O4 = o_values
+    #             font = pygame.font.Font(None, 36)
+    #             text = font.render(f"O1: {O1:.3f}, O2: {O2:.3f}, O3: {O3:.3f}, O4: {O4:.3f}", True, (255, 255, 255))
+    #             self.game.window.blit(text, (10, 10))
+
+    #         pygame.display.update()
+    def test_ai(self, net, frame_dir='video_frames', global_frame=0):
         clock = pygame.time.Clock()
         run = True
-        while run:
+        steps = 0
+        while run and self.game.food_collected < self.game.total_food and steps < self.game.optimalTime:
             clock.tick(60)
             game_info = self.game.loop()
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
                     break
-                
-            # Move agent; retrieve outputs for display
-            o_values = self.move_agent(net, test=True)  # See edit below for move_agent!
-
+            o_values = self.move_agent(net)
             self.game.draw(draw_score=True)
-
-            # Display O1, O2, and O3 values on the window
-            if o_values is not None:
-                O1, O2, O3, O4 = o_values
-                font = pygame.font.Font(None, 36)
-                text = font.render(f"O1: {O1:.3f}, O2: {O2:.3f}, O3: {O3:.3f}, O4: {O4:.3f}", True, (255, 255, 255))
-                self.game.window.blit(text, (10, 10))
-
             pygame.display.update()
+            
+            frame_filename = os.path.join(frame_dir, f"frame_{global_frame:05d}.png")
+            pygame.image.save(self.game.window, frame_filename)
+            global_frame += 1  # increment global frame on every image
+
+            if self.game.optimalTime <= steps or game_info.food_collected >= game_info.total_food:
+                break
+            steps += 1
+        return global_frame  # Return updated counter!
+
+
+
+   
+
+
 
 
     def train_ai(self, genome, config, draw=False):
@@ -273,9 +303,28 @@ def run_neat(config):
     plt.show()
 
 
+# def test_best_network(config):
+#     with open("best.pickle", "rb") as f:
+#         winner = pickle.load(f)
+#     for i in range(NUM_RUNS):
+#         if not chosen_arrangement[i]:
+#             continue
+#         winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+
+#         width, height = 900, 900
+#         win = pygame.display.set_mode((width, height))
+#         pygame.display.set_caption("Forage")
+#         foragetask = ForageTask(win, width, height, arrangement_idx=i)
+#         foragetask.test_ai(winner_net)
+
 def test_best_network(config):
+    frame_dir = "video_frames"
+    os.makedirs(frame_dir, exist_ok=True)
     with open("best.pickle", "rb") as f:
         winner = pickle.load(f)
+
+    global_frame = 0  # NEW: global frame counter
+
     for i in range(NUM_RUNS):
         if not chosen_arrangement[i]:
             continue
@@ -285,9 +334,9 @@ def test_best_network(config):
         win = pygame.display.set_mode((width, height))
         pygame.display.set_caption("Forage")
         foragetask = ForageTask(win, width, height, arrangement_idx=i)
-        foragetask.test_ai(winner_net)
 
-
+        # Pass the global_frame **by reference** & get back updated value
+        global_frame = foragetask.test_ai(winner_net, frame_dir=frame_dir, global_frame=global_frame)
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'config-replication-plateau')
@@ -296,5 +345,5 @@ if __name__ == '__main__':
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    run_neat(config)
+    # run_neat(config)
     test_best_network(config)

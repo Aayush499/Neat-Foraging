@@ -79,7 +79,7 @@ class Game:
         self.window = window
         self.current_direction = ""
 
-        self.discount_factor = 0.90
+        self.discount_factor = 0.99
         self.carry_time = 0
         self.food_value = 1
 
