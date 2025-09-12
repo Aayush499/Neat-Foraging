@@ -1,4 +1,6 @@
 # https://neat-python.readthedocs.io/en/latest/xor_example.html
+import argparse
+import subprocess
 from Forage import Game
 import pygame
 import neat
@@ -8,17 +10,34 @@ import pickle
 import matplotlib.pyplot as plt
 from Forage.food import Food
 import numpy as np
+import glob
+import csv
 NUM_RUNS = 18
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
-gsteps =0
+chosen_arrangement = [True] *18
+# chosen_arrangement[6] = True
+# chosen_arrangement = [False, True, True, True, True, True, False, True, False, False, False, False, True, True, True, True, False, False, ]
+# chosen_arrangement = [False, False, True, True, True, True, False, False, False, False, False, False, False, False, False, False, False, False, ]
+WIDTH, HEIGHT = 1000, 1000
+
+#create a function to generate a string prefix based on the parameters
+def generate_prefix():
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet
+    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}"
+
 class ForageTask:
-    def __init__(self, window, width, height, arrangement_idx = 0, gsteps = 0):
+    def __init__(self, window, width, height, arrangement_idx = 0):
         if window is None:
             os.environ["SDL_VIDEODRIVER"] = "dummy"  # Use a dummy display to prevent a window from opening
             pygame.display.init()  # Initialize Pygame without a window
             window = pygame.Surface((width, height))  # Create an off-screen surface
-        self.gsteps = gsteps
-        self.game = Game(window, width, height, arrangement_idx)
+        global obstacles
+        global particles
+        global movement_type
+        global ricochet
+
+        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet
+        )
         self.foods = self.game.food_list
         self.agent = self.game.agent
         self.pheromone = self.game.pheromones
@@ -33,7 +52,7 @@ class ForageTask:
         run = True
         chk = False
         log = 0
-        while run :
+        while run:
             clock.tick(60)
             self.game.loop()
 
@@ -83,8 +102,8 @@ class ForageTask:
             O2 = output[1]
             O3 = output[2]
             O4 = output[3]    
-            place_pheromone = O4 > 0.5  # Whether it wants to place pheromones
-            
+            place_pheromone = O4 > -0.5  # Whether it wants to place pheromones
+
             # Display network's decision
             # print(f"Predicted Move: {predicted_move}, Pheromone: {place_pheromone}")
 
@@ -98,11 +117,40 @@ class ForageTask:
 
 
 
+    # def test_ai(self, net):
+    #     """
+    #     Test the AI 
+    #     """
+    #     clock = pygame.time.Clock()
+    #     run = True
+    #     while run:
+    #         clock.tick(60)
+    #         game_info = self.game.loop()
+
+    #         for event in pygame.event.get():
+    #             if event.type == pygame.QUIT:
+    #                 run = False
+    #                 break
+                
+    #         # Move agent; retrieve outputs for display
+    #         o_values = self.move_agent(net, test=True)  # See edit below for move_agent!
+
+    #         self.game.draw(draw_score=True)
+
+    #         # Display O1, O2, and O3 values on the window
+    #         if o_values is not None:
+    #             O1, O2, O3, O4 = o_values
+    #             font = pygame.font.Font(None, 36)
+    #             text = font.render(f"O1: {O1:.3f}, O2: {O2:.3f}, O3: {O3:.3f}, O4: {O4:.3f}", True, (255, 255, 255))
+    #             self.game.window.blit(text, (10, 10))
+
+    #         pygame.display.update()
     def test_ai(self, net, frame_dir='video_frames', global_frame=0):
         clock = pygame.time.Clock()
+
         run = True
         steps = 0
-        while run and self.game.score < self.game.total_food and steps < self.game.optimalTime:
+        while run and self.game.food_collected < self.game.total_food and steps < self.game.optimalTime:
             clock.tick(60)
             game_info = self.game.loop()
             for event in pygame.event.get():
@@ -120,7 +168,14 @@ class ForageTask:
             if self.game.optimalTime <= steps or game_info.food_collected >= game_info.total_food:
                 break
             steps += 1
+
+        
         return global_frame  # Return updated counter!
+
+
+
+   
+
 
 
 
@@ -132,15 +187,20 @@ class ForageTask:
          
         run = True
         start_time = time.time()
-
+        draw = False
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         self.genome = genome
 
         clock = 0
+
+        if draw:
+            win = pygame.display.set_mode((WIDTH, HEIGHT))
+            self.game.window = win
+
         while run:
-            # for event in pygame.event.get():
-            #     if event.type == pygame.QUIT:
-            #         return True
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return True
             clock+=1
             game_info = self.game.loop()
 
@@ -172,17 +232,24 @@ class ForageTask:
                 sensor_inputs.append(cell)  # Append (food, pheromone, nest) values
         if self.agent.carrying_food_receptor:
             sensor_inputs.append(self.agent.carrying_food) # Append carrying food value
+        
             
         output = net.activate(sensor_inputs)  
 
         O1 = output[0]
         O2 = output[1]
+        O3 = output[2]
+        
+        if test:
+            self.game.move_agent(O1, O2, O3)
+
+            return O1, O2  # Return values for display
+
+        valid = self.game.move_agent(O1, O2, O3)
+       
+
         
 
-        valid = self.game.move_agent(O1, O2)
-
-        if test:
-            return O1, O2
         return None
 
 
@@ -200,7 +267,7 @@ def eval_genomes(genomes, config):
     """
     Run each genome a set number of time to determine the fitness.
     """
-    width, height = 900, 900
+    width, height = WIDTH, HEIGHT
     draw = False
     win = None if not draw else pygame.display.set_mode((width, height))
     # pygame.display.set_caption("Forage")
@@ -209,6 +276,11 @@ def eval_genomes(genomes, config):
         print(round(i/len(genomes) * 100), end=" ")
         genome.fitness = 0
         for run in range(NUM_RUNS):
+           
+            if not chosen_arrangement[run]:
+                continue
+            
+
             forage = ForageTask(win, width, height, arrangement_idx=run)
 
             force_quit = forage.train_ai(genome, config, draw)
@@ -218,56 +290,169 @@ def eval_genomes(genomes, config):
         genome.fitness /= NUM_RUNS
         # print(f"Genome {genome_id}:, Fitness: {genome.fitness}")
 
+def get_latest_checkpoint(dir_path, pattern_prefix):
+    files = glob.glob(os.path.join(dir_path, f"{pattern_prefix}*"))
+    if not files:
+        return ''  # No checkpoint files found
+    # Sort files by creation time (or use modified time: os.path.getmtime)
+    latest_file = max(files, key=os.path.getctime)
+    return latest_file
+
 
 
 def run_neat(config):
+    global obstacles, particles, generations, movement_type, network_type, sub
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
+    prefix_string = generate_prefix()
     checkpoint_file = ''
+    checkpoint_dir = 'checkpoints/'
     # checkpoint_file = 'checkpoints/replication/769'
     
+    #create checkpoint name based on parameters
+    prefix_string = generate_prefix()
+    checkpoint_subdir = f"{checkpoint_dir}checkpoint-{prefix_string}/"
 
+    csv_filename = os.path.join(checkpoint_subdir, 'fitness_history.csv')
+
+
+
+    os.makedirs(checkpoint_subdir, exist_ok=True)
+    checkpoint_prefix = os.path.join(checkpoint_subdir, 'neat-checkpoint-')
+    checkpoint_file = get_latest_checkpoint(checkpoint_subdir, 'neat-checkpoint-')
+    print("Checkpoint file:", checkpoint_file)
+    
+    temp_generations = generations
     # Resume training if checkpoint exists
     if os.path.exists(checkpoint_file):
         print("Resuming from checkpoint...")
+        #restore from the last file in the directory checkpoint_file
         p = neat.Checkpointer.restore_checkpoint(checkpoint_file)
+        # Extract the generation number from the filename
+        last_gen = int(os.path.basename(checkpoint_file).split('-')[-1])
+        
+        temp_generations -= last_gen  # Adjust remaining generations
+        if temp_generations <= 0:
+            print("Training already completed in previous runs.")
+            return
+        print(f"Continuing training for {temp_generations} more generations...")
+
     else:
         print("Starting fresh training...")
         p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(10, None, 'checkpoints/simple/'))
+    p.add_reporter(neat.Checkpointer(10, None, filename_prefix=checkpoint_prefix))
     
-    winner = p.run(eval_genomes, 100)
-    with open("best.pickle", "wb") as f:
+    winner = p.run(eval_genomes, temp_generations)
+    best_dir = "best_networks"
+    os.makedirs(best_dir, exist_ok=True)
+    with open(os.path.join(best_dir, f"best-{prefix_string}.pickle"), "wb") as f:
         pickle.dump(winner, f)
+
+    def append_fitness_data(best_fitness, avg_fitness):
+        with open(csv_filename, 'a', newline='') as f:
+            writer = csv.writer(f)
+            for best, avg in zip(best_fitness, avg_fitness):
+                writer.writerow([best, avg])
 
     best_fitness = stats.get_fitness_stat(max)
     avg_fitness = stats.get_fitness_mean()
+    append_fitness_data(best_fitness, avg_fitness)
+
+    
+
+    def load_fitness_history(csv_filename):
+        best_data, avg_data = [], []
+        with open(csv_filename, 'r') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                # Safeguard in case of blank lines
+                if len(row) < 2:
+                    continue
+                best_data.append(float(row[0]))
+                avg_data.append(float(row[1]))
+        return best_data, avg_data
+
+    # Usage before plotting:
+    all_best_fitness, all_avg_fitness = load_fitness_history(csv_filename)
 
     plt.figure(figsize=(10, 5))
-    plt.plot(best_fitness, label="Best Fitness", color='blue')
-    plt.plot(avg_fitness, label="Average Fitness", color='orange')
-    plt.xlabel("Generation")
+    plt.plot(all_best_fitness, label="Best Fitness (All Runs)", color='blue')
+    plt.plot(all_avg_fitness, label="Average Fitness (All Runs)", color='orange')
+    plt.xlabel("Generation (Total)")
     plt.ylabel("Fitness")
     plt.legend()
-    plt.title("Fitness Over Generations")
+    plt.title("Fitness Over All Generations (Consolidated)")
     plt.grid()
+
+    plot_filename = os.path.join(checkpoint_subdir , "fitness_consolidated.png")
+    plt.savefig(plot_filename)
     plt.show()
 
+   
+
+
+
+# def test_best_network(config):
+#     with open("best.pickle", "rb") as f:
+#         winner = pickle.load(f)
+#     for i in range(NUM_RUNS):
+#         if not chosen_arrangement[i]:
+#             continue
+#         winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+
+#         width, height = 900, 900
+#         win = pygame.display.set_mode((width, height))
+#         pygame.display.set_caption("Forage")
+#         foragetask = ForageTask(win, width, height, arrangement_idx=i)
+#         foragetask.test_ai(winner_net)
+
+def create_video_from_frames(frame_dir, output_filename, framerate=30):
+    # The frame filenames should be named sequentially as frame_00000.png, frame_00001.png, etc.
+    # FFmpeg pattern for input files: frame_%05d.png (same as your saving code)
+    ffmpeg_cmd = [
+        "ffmpeg",
+        "-y",                       # Overwrite without asking
+        "-framerate", str(framerate),
+        "-i", os.path.join(frame_dir, "frame_%05d.png"),
+        "-c:v", "libx264",          # Codec
+        "-profile:v", "high",
+        "-crf", "20",               # Quality: lower is better (18-23 is common)
+        "-pix_fmt", "yuv420p",      # Pixel format
+        output_filename
+    ]
+    subprocess.run(ffmpeg_cmd, check=True)
 
 def test_best_network(config):
-    frame_dir = "video_frames"
-    os.makedirs(frame_dir, exist_ok=True)
-    with open("best.pickle", "rb") as f:
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet
+    prefix_string = generate_prefix()
+    frame_dir = f'video_dir/{prefix_string}_frames'
+    # os.makedirs(frame_dir, exist_ok=True)
+    #make directory if it doesn't exist, if it exists, delete all files in it
+    if not os.path.exists(frame_dir):
+        os.makedirs(frame_dir)
+    else:
+        files = glob.glob(os.path.join(frame_dir, '*'))
+        for f in files:
+            os.remove(f)
+            
+    best_dir = "best_networks"
+    filename = os.path.join(best_dir, f"best-{prefix_string}.pickle")
+    if not os.path.exists(filename):
+        print(f"Best network file {filename} not found!")
+        return
+    with open(filename, "rb") as f:
         winner = pickle.load(f)
 
     global_frame = 0  # NEW: global frame counter
 
     for i in range(NUM_RUNS):
+        if not chosen_arrangement[i]:
+            continue
         winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
 
-        width, height = 900, 900
+        width, height = WIDTH, HEIGHT
         win = pygame.display.set_mode((width, height))
         pygame.display.set_caption("Forage")
         foragetask = ForageTask(win, width, height, arrangement_idx=i)
@@ -275,15 +460,69 @@ def test_best_network(config):
         # Pass the global_frame **by reference** & get back updated value
         global_frame = foragetask.test_ai(winner_net, frame_dir=frame_dir, global_frame=global_frame)
 
+    video_name = f"{prefix_string}.mp4"
+    output_path = os.path.join("video_dir", video_name)
+    create_video_from_frames(frame_dir, output_path, framerate=30)
+    print("Video created at:", output_path)
 
 
+def parser():
+    import argparse
+    parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
+    parser.add_argument("--particles", type=int, default=5, help="Number of food particles")
+    parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
+    parser.add_argument("--generations", type=int, default=100, help="Number of generations")
+    # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
+    parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
+                        )
+    parser.add_argument("--network", type=str, default="ff", help="Type of neural network")
+    parser.add_argument("--test", type=str, default="False", help="Test the best network after training")
+    #add an argument for adding a sub number for multiple runs
+    parser.add_argument("--sub", type=int, default=0, help="Sub number for multiple runs")
+    parser.add_argument("--ricochet", type=str, default="False", help="Ricochet off walls or not")
+    args = parser.parse_args()
+    return args
+
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+    
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config-replication-plateau')
+    
+    # config_path = os.path.join(local_dir, 'config-replication-plateau')
+    args = parser()
+    global obstacles, particles, generations, movement_type, network_type, sub
+    obstacles = str2bool(args.obstacles)
+    particles = args.particles
+    generations = args.generations
+    movement_type = args.movement_type
+    network_type = args.network
+    sub = args.sub
+    test_run = str2bool(args.test)
+    ricochet = str2bool(args.ricochet)
+    if args.network == "ff":
+        config_filename = 'config-simple-ff'
+    elif args.network == "recursive":
+        config_filename = 'config-simple-recursive'
+    else:
+        raise ValueError("Invalid network type. Choose 'ff' or 'recursive'.")
+    config_path = os.path.join(local_dir+'/configs/', config_filename)
+
+    # config_path = os.path.join(local_dir, args.config)
+    print("Using config file:", config_path)
 
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    # run_neat(config)
+
+    if not test_run:
+        run_neat(config)
     test_best_network(config)
