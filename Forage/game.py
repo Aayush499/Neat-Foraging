@@ -35,7 +35,8 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line"):
+      
         self.window_width = window_width
         self.window_height = window_height
 
@@ -45,12 +46,12 @@ class Game:
         food_pos = []
         buffer_distance = self.agent.sensor_length  # minimum Euclidean distance from agent (prevents spawn overlap)
         
-        # random.seed(arrangement_idx)
-        # numpy.random.seed(arrangement_idx)
+        random.seed(arrangement_idx)
+        numpy.random.seed(arrangement_idx)
 
         while len(food_pos) < self.total_food:
-            x = random.randint(self.agent.x-200, self.agent.x+200)
-            y = random.randint(self.agent.y-400, self.agent.y-200)
+            x = random.randint(400, 600)
+            y = random.randint(100, 250)
             # Prevent food from spawning on top of the agent
             dist = ((self.agent.x - x)**2 + (self.agent.y - y)**2)**0.5
             if dist > buffer_distance:
@@ -82,11 +83,16 @@ class Game:
             
         ]
         if obstacles:
-            self.obstacles += [
-                # Obstacle(300, 450, 300, 300),
-                Obstacle(400, 400, 600, 400)
-                # Obstacle(600, 300, 600, 450)
-            ]
+            if obstacle_type == "angular":
+                self.obstacles += [
+                    # Obstacle(300, 450, 300, 300),
+                    Obstacle(400, 400, 500, 300),
+                    Obstacle(500, 300, 600, 400)
+                ]
+            elif obstacle_type == "line":
+                self.obstacles += [
+                    Obstacle(200, 300, 800, 300)
+                ]
 
         self.collision_occurred = False
 
@@ -257,6 +263,7 @@ class Game:
                 if r_cross_s != 0 and 0 <= t <= 1 and 0 <= u <= 1:
                     intersection_x = p[0] + t * r[0]
                     intersection_y = p[1] + t * r[1]
+                    
                     return (intersection_x, intersection_y)
                 else:
                     return None  # No intersection within the segments
@@ -281,6 +288,12 @@ class Game:
 
         def ricochet_simulation(start_point, target_point, obstacles, remaining_distance, max_bounces=10):
             if max_bounces <= 0 or remaining_distance < 1e-6:
+                #check if start point is inside any obstacle
+                for obstacle in obstacles:
+                    if segment_intersection(start_point, start_point, (obstacle.startx, obstacle.starty), (obstacle.endx, obstacle.endy)) is not None:
+                        self.collision_occurred = True 
+                        # print("Collision with obstacle")
+                        return self.agent.x, self.agent.y
                 return start_point
             for obstacle in obstacles:
                 intersect = segment_intersection(
@@ -322,9 +335,12 @@ class Game:
                     # Calculate new target point based on remaining distance
                     new_target = (intersect[0] + reflected[0]*new_remaining,
                                   intersect[1] + reflected[1]*new_remaining)
+                    
+                    new_start = (intersect[0] + reflected[0]*1e-6,
+                                  intersect[1] + reflected[1]*1e-6)  # Small step to avoid immediate re-collision
 
                     # Recursively check for further collisions
-                    return ricochet_simulation(intersect, new_target, obstacles, new_remaining, max_bounces - 1)
+                    return ricochet_simulation(new_start, new_target, obstacles, new_remaining, max_bounces - 1)
             return target_point  # No collision, return original target
 
            

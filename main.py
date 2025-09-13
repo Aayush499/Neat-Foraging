@@ -22,8 +22,8 @@ WIDTH, HEIGHT = 1000, 1000
 
 #create a function to generate a string prefix based on the parameters
 def generate_prefix():
-    global obstacles, particles, generations, movement_type, network_type, sub, ricochet
-    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}"
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type
+    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}"
 
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
@@ -31,12 +31,9 @@ class ForageTask:
             os.environ["SDL_VIDEODRIVER"] = "dummy"  # Use a dummy display to prevent a window from opening
             pygame.display.init()  # Initialize Pygame without a window
             window = pygame.Surface((width, height))  # Create an off-screen surface
-        global obstacles
-        global particles
-        global movement_type
-        global ricochet
+        global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet
+        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type
         )
         self.foods = self.game.food_list
         self.agent = self.game.agent
@@ -425,7 +422,7 @@ def create_video_from_frames(frame_dir, output_filename, framerate=30):
     subprocess.run(ffmpeg_cmd, check=True)
 
 def test_best_network(config):
-    global obstacles, particles, generations, movement_type, network_type, sub, ricochet
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, best_file
     prefix_string = generate_prefix()
     frame_dir = f'video_dir/{prefix_string}_frames'
     # os.makedirs(frame_dir, exist_ok=True)
@@ -439,6 +436,9 @@ def test_best_network(config):
             
     best_dir = "best_networks"
     filename = os.path.join(best_dir, f"best-{prefix_string}.pickle")
+    if best_file != "":
+        filename = os.path.join(best_dir, f"{best_file}.pickle")
+
     if not os.path.exists(filename):
         print(f"Best network file {filename} not found!")
         return
@@ -480,6 +480,8 @@ def parser():
     #add an argument for adding a sub number for multiple runs
     parser.add_argument("--sub", type=int, default=0, help="Sub number for multiple runs")
     parser.add_argument("--ricochet", type=str, default="False", help="Ricochet off walls or not")
+    parser.add_argument("--best", type=str, default="", help="Best network file to test")
+    parser.add_argument("--obstacle_type", type=str, help="Type of obstacle arrangement")
     args = parser.parse_args()
     return args
 
@@ -498,7 +500,8 @@ if __name__ == '__main__':
     
     # config_path = os.path.join(local_dir, 'config-replication-plateau')
     args = parser()
-    global obstacles, particles, generations, movement_type, network_type, sub
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type
+    obstacle_type = args.obstacle_type
     obstacles = str2bool(args.obstacles)
     particles = args.particles
     generations = args.generations
@@ -507,6 +510,7 @@ if __name__ == '__main__':
     sub = args.sub
     test_run = str2bool(args.test)
     ricochet = str2bool(args.ricochet)
+    best_file = args.best
     if args.network == "ff":
         config_filename = 'config-simple-ff'
     elif args.network == "recursive":
