@@ -22,8 +22,8 @@ WIDTH, HEIGHT = 1000, 1000
 
 #create a function to generate a string prefix based on the parameters
 def generate_prefix():
-    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type
-    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}"
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch
+    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}-SE{seeded}-OS{o_switch}"
 
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
@@ -33,7 +33,7 @@ class ForageTask:
             window = pygame.Surface((width, height))  # Create an off-screen surface
         global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type
+        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch
         )
         self.foods = self.game.food_list
         self.agent = self.game.agent
@@ -470,7 +470,7 @@ def parser():
     import argparse
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
     parser.add_argument("--particles", type=int, default=5, help="Number of food particles")
-    parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
+    parser.add_argument("--obstacles", type=str, default="True", help="Use obstacles or not")
     parser.add_argument("--generations", type=int, default=100, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
@@ -478,12 +478,15 @@ def parser():
     parser.add_argument("--network", type=str, default="ff", help="Type of neural network")
     parser.add_argument("--test", type=str, default="False", help="Test the best network after training")
     #add an argument for adding a sub number for multiple runs
-    parser.add_argument("--sub", type=int, default=0, help="Sub number for multiple runs")
+    parser.add_argument("--sub", type=str, default="0", help="Sub title for multiple runs")
     parser.add_argument("--ricochet", type=str, default="False", help="Ricochet off walls or not")
     parser.add_argument("--best", type=str, default="", help="Best network file to test")
-    parser.add_argument("--obstacle_type", type=str, help="Type of obstacle arrangement")
+    parser.add_argument("--obstacle_type", type=str, default="line", help="Type of obstacle arrangement")
+    parser.add_argument("--seeded", type=str, default="False", help="Use seeded random or not") 
+    parser.add_argument("--orientation_switching", type=str, default="False", help="Use orientation switching or not")
     args = parser.parse_args()
     return args
+    
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -500,13 +503,15 @@ if __name__ == '__main__':
     
     # config_path = os.path.join(local_dir, 'config-replication-plateau')
     args = parser()
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch
+    seeded = str2bool(args.seeded)
     obstacle_type = args.obstacle_type
     obstacles = str2bool(args.obstacles)
     particles = args.particles
     generations = args.generations
     movement_type = args.movement_type
     network_type = args.network
+    o_switch = str2bool(args.orientation_switching)
     sub = args.sub
     test_run = str2bool(args.test)
     ricochet = str2bool(args.ricochet)

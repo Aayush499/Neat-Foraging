@@ -15,7 +15,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             // "args": ["--obstacles", "True", "--network", "recursive", "--ricochet", "False"]
-            "args": ["--network", "recursive", "--best", "best-OTrue-F5-holonomic-G100-Nrecursive-S11-RFalse", "--ricochet", "True", "--obstacles", "True", "--test", "True"]
+            "args": ["--network", "recursive", "--ricochet", "True",  "--obstacle_type", "angular", "--sub", "switching", "--test", "true"]
         }
     ]
 }

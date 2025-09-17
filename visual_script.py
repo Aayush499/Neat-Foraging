@@ -7,8 +7,8 @@ import os
 import visualize
 
 # Load config and genome.
-config_file = 'config-replication-plateau'
-genome_file = 'best.pickle'
+config_file = 'configs/config-simple-recursive'
+genome_file = 'best_networks/best-OTrue-F5-holonomic-G100-Nrecursive-Snetwork_test_1-RFalse-OTline-SEFalse.pickle'
 
 config = neat.Config(
     neat.DefaultGenome,

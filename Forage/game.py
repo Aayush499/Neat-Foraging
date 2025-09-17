@@ -35,7 +35,9 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line"):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False):
+        
+        
       
         self.window_width = window_width
         self.window_height = window_height
@@ -46,8 +48,9 @@ class Game:
         food_pos = []
         buffer_distance = self.agent.sensor_length  # minimum Euclidean distance from agent (prevents spawn overlap)
         
-        random.seed(arrangement_idx)
-        numpy.random.seed(arrangement_idx)
+        if seeded:
+            random.seed(arrangement_idx)
+            numpy.random.seed(arrangement_idx)
 
         while len(food_pos) < self.total_food:
             x = random.randint(400, 600)
@@ -82,16 +85,32 @@ class Game:
             # Obstacle(600, 300, 600, 450)
             
         ]
+
+        #offset angle randomly based on arrangement idx
+        if o_switch:
+            self.agent.theta = (arrangement_idx % 8) * (math.pi/4)
+        # self.agent.theta = (arrangement_idx % 4) * (math.pi/2)
         if obstacles:
             if obstacle_type == "angular":
-                self.obstacles += [
-                    # Obstacle(300, 450, 300, 300),
-                    Obstacle(400, 400, 500, 300),
-                    Obstacle(500, 300, 600, 400)
-                ]
+                if arrangement_idx % 3 == 0:
+                    self.obstacles += [
+                        # Obstacle(300, 450, 300, 300),
+                        Obstacle(400, 400, 500, 300),
+                        Obstacle(500, 300, 600, 400)
+                    ]
+                elif arrangement_idx % 3 == 1:
+                    self.obstacles += [
+                        Obstacle(450,475, 550,375),
+                        Obstacle(550,375, 650,475)
+                    ]
+                elif arrangement_idx % 3 == 2:
+                    self.obstacles += [
+                        Obstacle(350,475, 450,375),
+                        Obstacle(450,375, 550,475)
+                    ]
             elif obstacle_type == "line":
                 self.obstacles += [
-                    Obstacle(200, 300, 800, 300)
+                    Obstacle(400, 400, 600, 400)
                 ]
 
         self.collision_occurred = False
@@ -336,8 +355,15 @@ class Game:
                     new_target = (intersect[0] + reflected[0]*new_remaining,
                                   intersect[1] + reflected[1]*new_remaining)
                     
-                    new_start = (intersect[0] + reflected[0]*1e-6,
-                                  intersect[1] + reflected[1]*1e-6)  # Small step to avoid immediate re-collision
+                    # new_start = (intersect[0] + reflected[0]*1e-6,
+                    #               intersect[1] + reflected[1]*1e-6)  # Small step to avoid immediate re-collision
+                    #lets make new start as a point slightly before the intersection point using the incident vector
+                    step_back = 1e-6
+                    incident_unit = (incoming_unit[0], incoming_unit[1])
+                    new_start = (intersect[0] - incident_unit[0]*step_back,
+                                 intersect[1] - incident_unit[1]*step_back)
+                    
+
 
                     # Recursively check for further collisions
                     return ricochet_simulation(new_start, new_target, obstacles, new_remaining, max_bounces - 1)

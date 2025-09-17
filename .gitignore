@@ -2,4 +2,5 @@ checkpoints/
 __pycache__/
 Forage/__pycache__/
 best.pickle
-video_dir
+video_dir/*frames
+
