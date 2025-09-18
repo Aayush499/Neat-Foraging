@@ -15,7 +15,8 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             // "args": ["--obstacles", "True", "--network", "recursive", "--ricochet", "False"]
-            "args": ["--network", "recursive", "--ricochet", "True",  "--obstacle_type", "angular", "--sub", "switching", "--test", "true"]
+            // "args": ["--network", "recursive", "--ricochet", "True",  "--obstacle_type", "angular", "--sub", "switching", "--test", "true"]
+            "args": ["--generations", "1"]
         }
     ]
 }

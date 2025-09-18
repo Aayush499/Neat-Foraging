@@ -52,13 +52,26 @@ class Game:
             random.seed(arrangement_idx)
             numpy.random.seed(arrangement_idx)
 
+        # while len(food_pos) < self.total_food:
+        #     x = random.randint(400, 600)
+        #     y = random.randint(100, 250)
+        #     # Prevent food from spawning on top of the agent
+        #     dist = ((self.agent.x - x)**2 + (self.agent.y - y)**2)**0.5
+        #     if dist > buffer_distance:
+        #         food_pos.append((x, y))
+
+        food_pos = []
         while len(food_pos) < self.total_food:
-            x = random.randint(400, 600)
-            y = random.randint(100, 250)
-            # Prevent food from spawning on top of the agent
-            dist = ((self.agent.x - x)**2 + (self.agent.y - y)**2)**0.5
+            angle = random.uniform(0, 2 * math.pi)
+            x = self.agent.x + self.agent.sensor_length * math.cos(angle)
+            y = self.agent.y + self.agent.sensor_length * math.sin(angle)
+            dist = ((self.agent.x - x) ** 2 + (self.agent.y - y) ** 2) ** 0.5
             if dist > buffer_distance:
                 food_pos.append((x, y))
+         
+
+        
+        
 
         # self.food_list = [Food(x, y) for x, y in food_pos]
         # food_pos = arrangements[arrangement_idx]
@@ -67,7 +80,7 @@ class Game:
 
         # self.optimalTime = 250
         # self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
-        self.optimalTime = (400/self.agent.vel)*4
+        self.optimalTime = (self.agent.sensor_length/self.agent.vel)*2 + 10
         
         self.score = 0
         self.food_collected = 0
@@ -86,9 +99,9 @@ class Game:
             
         ]
 
-        #offset angle randomly based on arrangement idx
+        #choose a random angle from 0 to 2pi for the agent
         if o_switch:
-            self.agent.theta = (arrangement_idx % 8) * (math.pi/4)
+            self.agent.theta = random.uniform(0, 2*math.pi)
         # self.agent.theta = (arrangement_idx % 4) * (math.pi/2)
         if obstacles:
             if obstacle_type == "angular":
@@ -139,38 +152,67 @@ class Game:
         agent = self.agent
         nest = self.nest
         collision_threshold = self.agent.radius + self.food_list[0].radius if self.food_list else 0
-        if True:
+        if not agent.carrying_food:
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                 # if dist < agent.radius + food.radius:
                 if dist < collision_threshold:
+                    # small reward for picking up food
                     self.score += 1
                     self.agent.x = food.x
                     self.agent.y = food.y
-                    # agent.carrying_food = True
+                    agent.carrying_food = True
                     self.carry_time = 0
                     self.food_list.remove(food)
                     
-                    break       
-   
+                    break   
+        else:
+          #heavy reward for bringing food to the nest, scaled by how quickly the agent does it
+            self.carry_time += 1
+            dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
+            if dist < agent.radius + nest.radius:
+                self.score += int(self.optimalTime * (self.discount_factor ** self.carry_time))
+                self.food_collected += 1
+                agent.carrying_food = False
+                if self.food_collected == self.total_food:
+                    self.score += 50  # bonus for collecting all food
+                #remove all pheromones when food is delivered to nest
+                self.pheromones = []
+            
+        
+
     def update_sensor_data(self):
 
         agent = self.agent
         nest = self.nest
         for i in range(agent.sensor_count):
-            mini = 1000
+            pheromone_signal = 0
+            for pheromone in self.pheromones:
+                dist = ((agent.x - pheromone.x) ** 2 + (agent.y - pheromone.y) ** 2) ** 0.5
+                # if dist < agent.sensor_length, add the strength of the pheromone to the sensor signal
+                if dist <= agent.sensor_length:
+                    angle_to_pheromone = math.atan2(pheromone.y - agent.y, pheromone.x - agent.x)
+                    sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
+                    angle_diff = abs((angle_to_pheromone - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
+                    if angle_diff < (math.pi / agent.sensor_count):
+                        # pheromone_signal += pheromone.strength * (1 - (dist / (agent.sensor_length + 0.1)))
+                        pheromone_signal += pheromone.strength / (dist + 0.1)
+                        # print(f"Pheromone detected at Sensor {i}, {dist} distance away")
+            agent.sensors[i][0] = pheromone_signal
+                
              
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
-                if mini <= dist:
-                    continue
-                #insert dist into sens
-                mini = dist
-                agent.sensors[i][0] = mini #if dist < agent.sensor_length else 0 (should be handled automaticaly I think)
-                #calculate angle difference between food and agent.theta
-                angle_to_food = math.atan2(food.y - agent.y, food.x - agent.x)
-                relative_angle = (angle_to_food - agent.theta) % (2 * math.pi)
-                agent.sensors[i][1] = relative_angle
+                #round off to 6 decimal places
+                dist = round(dist, 6)
+                if dist <= agent.sensor_length:
+                    angle_to_food = math.atan2(food.y - agent.y, food.x - agent.x)
+                    sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
+                    angle_diff = abs((angle_to_food - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
+                    if angle_diff < (math.pi / agent.sensor_count):
+                        agent.sensors[i][1] = 1 - (dist / (agent.sensor_length + 0.1))
+                        # print(f"Food detected at Sensor {i}, {dist} distance away")
+                        break
     def update_pheromones(self):
         for i in range(len(self.pheromones)):
             strength =   self.pheromones[i].strength
@@ -379,6 +421,7 @@ class Game:
             return False  # Collision with obstacle, movement not valid
 
         self.agent.move(new_position[0], new_position[1])
+
         return True
 
 

@@ -236,7 +236,11 @@ class ForageTask:
         O1 = output[0]
         O2 = output[1]
         O3 = output[2]
+        O4 = output[3]    
+        place_pheromone = O4 > -0.5  # Whether it wants to place pheromones
         
+        if place_pheromone:
+            self.game.place_pheromone()
         if test:
             self.game.move_agent(O1, O2, O3)
 
@@ -469,8 +473,8 @@ def test_best_network(config):
 def parser():
     import argparse
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
-    parser.add_argument("--particles", type=int, default=5, help="Number of food particles")
-    parser.add_argument("--obstacles", type=str, default="True", help="Use obstacles or not")
+    parser.add_argument("--particles", type=int, default=1, help="Number of food particles")
+    parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
     parser.add_argument("--generations", type=int, default=100, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
@@ -483,7 +487,7 @@ def parser():
     parser.add_argument("--best", type=str, default="", help="Best network file to test")
     parser.add_argument("--obstacle_type", type=str, default="line", help="Type of obstacle arrangement")
     parser.add_argument("--seeded", type=str, default="False", help="Use seeded random or not") 
-    parser.add_argument("--orientation_switching", type=str, default="False", help="Use orientation switching or not")
+    parser.add_argument("--orientation_switching", type=str, default="True", help="Use orientation switching or not")
     args = parser.parse_args()
     return args
     

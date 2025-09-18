@@ -9,24 +9,24 @@ class Agent:
     def __init__(self, x, y):
         self.x = self.original_x = x
         self.y = self.original_y = y
-        self.sensor_count = 1
+        self.sensor_count = 8
         self.theta = math.pi/2 #orientation of agent
         # self.sensor_count = 4
         # self.sensor_segments = 8
         self.sensor_segments = 1
-        # self.carrying_food = False
+        self.carrying_food = False
         self.radius = 10
         self.sensor_length = 99
         self.color = BLUE
        
-        self.vel = 10
+        self.vel = 3
         #keep a variable that tells us what types of sensors we have 
         self.nest_receptor = False
         self.food_receptor = True
-        self.pheromone_receptor = False
+        self.pheromone_receptor = True
         self.carrying_food_receptor = False
-        self.angle_receptor = True
-        self.sensors = [[[0] for _ in range(self.sensor_segments*self.pheromone_receptor + self.food_receptor + self.nest_receptor + self.angle_receptor) ] for _ in range(self.sensor_count)]
+        self.angle_receptor = False
+        self.sensors = [[0 for _ in range(self.sensor_segments*self.pheromone_receptor + self.food_receptor + self.nest_receptor + self.angle_receptor) ] for _ in range(self.sensor_count)]
         self.sensor_color = YELLOW
 
 
