@@ -237,7 +237,7 @@ class ForageTask:
         O2 = output[1]
         O3 = output[2]
         O4 = output[3]    
-        place_pheromone = O4 > -0.5  # Whether it wants to place pheromones
+        place_pheromone = O4 > -0.25  # Whether it wants to place pheromones
         
         if place_pheromone:
             self.game.place_pheromone()

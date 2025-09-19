@@ -80,7 +80,7 @@ class Game:
 
         # self.optimalTime = 250
         # self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
-        self.optimalTime = (self.agent.sensor_length/self.agent.vel)*2 + 10
+        self.optimalTime = (self.agent.sensor_length/self.agent.vel)*2 + 20
         
         self.score = 0
         self.food_collected = 0
@@ -91,6 +91,7 @@ class Game:
 
         self.discount_factor = 0.999
         self.carry_time = 0
+        self.searching_time = 0
         
         self.obstacles = [
             # Obstacle(300, 450, 300, 300)
@@ -151,14 +152,16 @@ class Game:
        
         agent = self.agent
         nest = self.nest
-        collision_threshold = self.agent.radius + self.food_list[0].radius if self.food_list else 0
+        collision_threshold = .1
         if not agent.carrying_food:
+            self.searching_time += 1
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                 # if dist < agent.radius + food.radius:
                 if dist < collision_threshold:
                     # small reward for picking up food
-                    self.score += 1
+                    # calculate the score based on how quickly the agent picks up the food
+                    self.score += 10 * (self.discount_factor ** self.searching_time)
                     self.agent.x = food.x
                     self.agent.y = food.y
                     agent.carrying_food = True
@@ -171,13 +174,14 @@ class Game:
             self.carry_time += 1
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
             if dist < agent.radius + nest.radius:
-                self.score += int(self.optimalTime * (self.discount_factor ** self.carry_time))
+                self.score += 150 * (self.discount_factor ** self.carry_time)
                 self.food_collected += 1
                 agent.carrying_food = False
                 if self.food_collected == self.total_food:
                     self.score += 50  # bonus for collecting all food
                 #remove all pheromones when food is delivered to nest
                 self.pheromones = []
+                self.searching_time = 0
             
         
 
