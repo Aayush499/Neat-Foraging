@@ -298,18 +298,21 @@ def get_latest_checkpoint(dir_path, pattern_prefix):
 
 
 def run_neat(config):
-    global obstacles, particles, generations, movement_type, network_type, sub
+    global obstacles, particles, generations, movement_type, network_type, sub, use_checkpoint
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
     prefix_string = generate_prefix()
     checkpoint_file = ''
     checkpoint_dir = 'checkpoints/'
     # checkpoint_file = 'checkpoints/replication/769'
     
+    
     #create checkpoint name based on parameters
     prefix_string = generate_prefix()
     checkpoint_subdir = f"{checkpoint_dir}checkpoint-{prefix_string}/"
+    
 
     csv_filename = os.path.join(checkpoint_subdir, 'fitness_history.csv')
+    csv_filename_bigness = os.path.join(checkpoint_subdir, 'bigness_history.csv')
 
 
 
@@ -317,15 +320,23 @@ def run_neat(config):
     checkpoint_prefix = os.path.join(checkpoint_subdir, 'neat-checkpoint-')
     checkpoint_file = get_latest_checkpoint(checkpoint_subdir, 'neat-checkpoint-')
     print("Checkpoint file:", checkpoint_file)
+
+    if use_checkpoint != "":
+        checkpoint_file = use_checkpoint
+        print("Using user-specified checkpoint:", checkpoint_file)
     
     temp_generations = generations
     # Resume training if checkpoint exists
     if os.path.exists(checkpoint_file):
         print("Resuming from checkpoint...")
         #restore from the last file in the directory checkpoint_file
+        
         p = neat.Checkpointer.restore_checkpoint(checkpoint_file)
         # Extract the generation number from the filename
-        last_gen = int(os.path.basename(checkpoint_file).split('-')[-1])
+        if use_checkpoint == "":
+            last_gen = int(os.path.basename(checkpoint_file).split('-')[-1])
+        else:
+            last_gen = 0
         
         temp_generations -= last_gen  # Adjust remaining generations
         if temp_generations <= 0:
@@ -353,9 +364,19 @@ def run_neat(config):
             for best, avg in zip(best_fitness, avg_fitness):
                 writer.writerow([best, avg])
 
+    def append_largeness_data(largest_genomes):
+        with open(csv_filename_bigness, 'a', newline='') as f:
+            writer = csv.writer(f)
+            for genome in largest_genomes:
+                writer.writerow([genome.key, len(genome.nodes), len(genome.connections)])
+
     best_fitness = stats.get_fitness_stat(max)
     avg_fitness = stats.get_fitness_mean()
+    largest_genomes_over_time = stats.most_big_genomes
     append_fitness_data(best_fitness, avg_fitness)
+    append_largeness_data(largest_genomes_over_time)
+
+    
 
     
 
@@ -371,21 +392,46 @@ def run_neat(config):
                 avg_data.append(float(row[1]))
         return best_data, avg_data
 
+    def load_bigness_history(csv_filename_bigness):
+        bigness_data = []
+        with open(csv_filename_bigness, 'r') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                # Safeguard in case of blank lines
+                if len(row) < 3:
+                    continue
+                bigness_data.append((int(row[0]), int(row[1]), int(row[2])))  # (genome_id, num_nodes, num_connections)
+        return bigness_data
     # Usage before plotting:
     all_best_fitness, all_avg_fitness = load_fitness_history(csv_filename)
+    all_largest_genomes = load_bigness_history(csv_filename_bigness)
+     
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(all_best_fitness, label="Best Fitness (All Runs)", color='blue')
-    plt.plot(all_avg_fitness, label="Average Fitness (All Runs)", color='orange')
-    plt.xlabel("Generation (Total)")
-    plt.ylabel("Fitness")
-    plt.legend()
-    plt.title("Fitness Over All Generations (Consolidated)")
-    plt.grid()
+    node_counts = [row[1] for row in all_largest_genomes]
+    conn_counts = [row[2] for row in all_largest_genomes]
 
-    plot_filename = os.path.join(checkpoint_subdir , "fitness_consolidated.png")
-    plt.savefig(plot_filename)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+    # Fitness plot
+    ax1.plot(all_best_fitness, label="Best Fitness", color="blue")
+    ax1.plot(all_avg_fitness, label="Avg Fitness", color="orange")
+    ax1.set_ylabel("Fitness")
+    ax1.legend()
+    ax1.grid()
+
+    # Bigness plot
+    ax2.plot(node_counts, label="Largest Genome Nodes", color="green")
+    ax2.plot(conn_counts, label="Largest Genome Conns", color="purple", linestyle="dashed")
+    ax2.set_ylabel("Network Size")
+    ax2.set_xlabel("Generation")
+    ax2.legend()
+    ax2.grid()
+
+    plt.suptitle("Fitness and Complexity Over Generations")
+    plt.tight_layout()
+    plt.savefig(os.path.join(checkpoint_subdir, "fitness_and_bigness_stacked.png"))
     plt.show()
+
 
    
 
@@ -475,7 +521,7 @@ def parser():
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
                         )
-    parser.add_argument("--network", type=str, default="ff", help="Type of neural network")
+    parser.add_argument("--network", type=str, default="recursive", help="Type of neural network")
     parser.add_argument("--test", type=str, default="False", help="Test the best network after training")
     #add an argument for adding a sub number for multiple runs
     parser.add_argument("--sub", type=str, default="0", help="Sub title for multiple runs")
@@ -483,7 +529,8 @@ def parser():
     parser.add_argument("--best", type=str, default="", help="Best network file to test")
     parser.add_argument("--obstacle_type", type=str, default="line", help="Type of obstacle arrangement")
     parser.add_argument("--seeded", type=str, default="False", help="Use seeded random or not") 
-    parser.add_argument("--orientation_switching", type=str, default="False", help="Use orientation switching or not")
+    parser.add_argument("--orientation_switching", type=str, default="True", help="Use orientation switching or not")
+    parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
     args = parser.parse_args()
     return args
     
@@ -503,7 +550,8 @@ if __name__ == '__main__':
     
     # config_path = os.path.join(local_dir, 'config-replication-plateau')
     args = parser()
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint
+    use_checkpoint = args.use_checkpoint
     seeded = str2bool(args.seeded)
     obstacle_type = args.obstacle_type
     obstacles = str2bool(args.obstacles)
