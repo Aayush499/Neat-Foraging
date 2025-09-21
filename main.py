@@ -517,7 +517,7 @@ def parser():
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
     parser.add_argument("--particles", type=int, default=5, help="Number of food particles")
     parser.add_argument("--obstacles", type=str, default="True", help="Use obstacles or not")
-    parser.add_argument("--generations", type=int, default=100, help="Number of generations")
+    parser.add_argument("--generations", type=int, default=200, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
                         )
