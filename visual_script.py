@@ -7,8 +7,8 @@ import os
 import visualize
 
 # Load config and genome.
-config_file = 'configs/config-simple-recursive'
-genome_file = 'best_networks/best-OTrue-F5-holonomic-G100-Nrecursive-Snetwork_test_1-RFalse-OTline-SEFalse.pickle'
+config_file = 'configs/config-simple-ff'
+genome_file = 'best_networks/best-OFalse-F1-holonomic-G200-Nff-S0-RFalse-OTline-SEFalse-OSTrue.pickle'
 
 config = neat.Config(
     neat.DefaultGenome,
@@ -25,4 +25,4 @@ with open(genome_file, "rb") as f:
 node_names = None  # You can define as dict if you want
 
 # Draw the network.
-visualize.draw_net(config, genome, view=True, node_names=node_names, prune_unused=True)
+visualize.draw_net(config, genome, view=True, node_names=node_names, prune_unused=False)

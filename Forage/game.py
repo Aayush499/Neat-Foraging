@@ -80,7 +80,7 @@ class Game:
 
         # self.optimalTime = 250
         # self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
-        self.optimalTime = (self.agent.sensor_length/self.agent.vel)*2 + 20
+        self.optimalTime = (self.agent.sensor_length/self.agent.vel)*4 + 20
         
         self.score = 0
         self.food_collected = 0
@@ -131,6 +131,8 @@ class Game:
 
         self.ricochet = ricochet
 
+        self.simple_guidance = False
+
     def _draw_score(self):
         score_text = self.SCORE_FONT.render(
             f"{self.score}", 1, self.WHITE)
@@ -152,7 +154,7 @@ class Game:
        
         agent = self.agent
         nest = self.nest
-        collision_threshold = .1
+        collision_threshold = self.agent.vel
         if not agent.carrying_food:
             self.searching_time += 1
             for food in self.food_list:
@@ -204,19 +206,38 @@ class Game:
                         # print(f"Pheromone detected at Sensor {i}, {dist} distance away")
             agent.sensors[i][0] = pheromone_signal
                 
-             
+            if self.agent.food_receptor: 
+                for food in self.food_list:
+                    dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
+                    #round off to 6 decimal places
+                    dist = round(dist, 6)
+                    if dist <= agent.sensor_length:
+                        angle_to_food = math.atan2(food.y - agent.y, food.x - agent.x)
+                        sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
+                        angle_diff = abs((angle_to_food - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
+                        if angle_diff < (math.pi / agent.sensor_count):
+                            agent.sensors[i][1] = 1 - (dist / (agent.sensor_length + 0.1))
+                            # print(f"Food detected at Sensor {i}, {dist} distance away")
+                            break
+        
+
+        if not self.agent.food_receptor:
+            agent.sensors[i+1][0] = 0
+            agent.sensors[i+1][1] = 0
+           
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                 #round off to 6 decimal places
                 dist = round(dist, 6)
                 if dist <= agent.sensor_length:
+                    #find difference between agent theta and angle to food
                     angle_to_food = math.atan2(food.y - agent.y, food.x - agent.x)
-                    sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
-                    angle_diff = abs((angle_to_food - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
-                    if angle_diff < (math.pi / agent.sensor_count):
-                        agent.sensors[i][1] = 1 - (dist / (agent.sensor_length + 0.1))
-                        # print(f"Food detected at Sensor {i}, {dist} distance away")
-                        break
+                    angle_diff = abs((angle_to_food - agent.theta + math.pi) % (2 * math.pi) - math.pi)
+                    #pass these values to self.agnent.sensors 
+                    agent.sensors[i+1][0] = 1 - (dist / (agent.sensor_length + 0.1))
+                    agent.sensors[i+1][1] = angle_diff / math.pi  # normalize to [0, 1]
+
+                    
     def update_pheromones(self):
         for i in range(len(self.pheromones)):
             strength =   self.pheromones[i].strength
@@ -341,6 +362,8 @@ class Game:
         # X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) 
         # Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta) 
         self.agent.theta = self.agent.theta + math.pi * O3
+        #make sure self.agent.theta is between 0 and 2pi
+        self.agent.theta = self.agent.theta % (2 * math.pi)
         X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) + self.agent.vel * O2* math.cos(self.agent.theta + math.pi/2)
         Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta) + self.agent.vel * O2* math.sin(self.agent.theta + math.pi/2)
 
@@ -425,6 +448,22 @@ class Game:
             return False  # Collision with obstacle, movement not valid
 
         self.agent.move(new_position[0], new_position[1])
+
+
+        if self.simple_guidance:
+            #give a small score if agent is moving towards food when self.carrying_food is False
+            if not self.agent.carrying_food:
+                dist1 = min([((self.agent.x - food.x) ** 2 + (self.agent.y - food.y) ** 2) ** 0.5 for food in self.food_list])
+                dist2 = min([((old_X - food.x) ** 2 + (old_Y - food.y) ** 2) ** 0.5 for food in self.food_list])
+                if dist1 < dist2:
+                    self.score += .01
+                    self.current_direction = "Towards Food"
+            else:
+                dist1 = ((self.agent.x - self.nest.x) ** 2 + (self.agent.y - self.nest.y) ** 2) ** 0.5
+                dist2 = ((old_X - self.nest.x) ** 2 + (old_Y - self.nest.y) ** 2) ** 0.5
+                if dist1 < dist2:
+                    self.score += .01
+                    self.current_direction = "Towards Nest"
 
         return True
 
