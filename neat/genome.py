@@ -341,11 +341,20 @@ class DefaultGenome(object):
         Attempt to add a new connection, the only restriction being that the output
         node cannot be one of the network input pins.
         """
-        possible_outputs = list(iterkeys(self.nodes))
-        out_node = choice(possible_outputs)
 
-        possible_inputs = possible_outputs + config.input_keys
-        in_node = choice(possible_inputs)
+        ##Aayush's change
+        #don't allow connections between output nodes and any other node if the network type is feedforward
+        if config.feed_forward:
+            # Only hidden and input nodes can be sources.
+            possible_sources = [k for k in iterkeys(self.nodes) if k not in config.output_keys] + config.input_keys
+            # Only hidden and output nodes can be targets, never inputs.
+            possible_targets = [k for k in iterkeys(self.nodes) if k not in config.input_keys]
+        else:
+            possible_sources = list(iterkeys(self.nodes)) + config.input_keys
+            possible_targets = list(iterkeys(self.nodes))
+
+        in_node = choice(possible_sources)
+        out_node = choice(possible_targets)
 
         # Don't duplicate connections.
         key = (in_node, out_node)
@@ -354,6 +363,8 @@ class DefaultGenome(object):
             if config.check_structural_mutation_surer():
                 self.connections[key].enabled = True
             return
+        
+        
 
         # Don't allow connections between two output nodes
         if in_node in config.output_keys and out_node in config.output_keys:
@@ -361,6 +372,8 @@ class DefaultGenome(object):
 
         # No need to check for connections between input nodes:
         # they cannot be the output end of a connection (see above).
+
+        
 
         # For feed-forward networks, avoid creating cycles.
         if config.feed_forward and creates_cycle(list(iterkeys(self.connections)), key):
