@@ -235,6 +235,8 @@ class Game:
                     angle_diff = abs((angle_to_food - agent.theta + math.pi) % (2 * math.pi) - math.pi)
                     #pass these values to self.agnent.sensors 
                     agent.sensors[i+1][0] = 1 - (dist / (agent.sensor_length + 0.1))
+                    #normalizing to -1, 1
+                    agent.sensors[i+1][0] = agent.sensors[i+1][0] * 2 - 1
                     agent.sensors[i+1][1] = angle_diff / math.pi  # normalize to [0, 1]
 
                     

@@ -154,8 +154,14 @@ class ForageTask:
                 if event.type == pygame.QUIT:
                     run = False
                     break
-            o_values = self.move_agent(net)
             self.game.draw(draw_score=True)
+            sensor_inputs = self.move_agent(net, True)
+            if len(sensor_inputs) > 4 and sensor_inputs[4] == 0:
+                font = pygame.font.Font(None, 36)
+                text = font.render("FOOD NOT DETECTED!", True, (255, 0, 0))  # Red color
+                self.game.window.blit(text, (WIDTH/2 -100, HEIGHT/2 - 50)) 
+
+            
             pygame.display.update()
             
             frame_filename = os.path.join(frame_dir, f"frame_{global_frame:05d}.png")
@@ -165,6 +171,8 @@ class ForageTask:
             if self.game.optimalTime <= steps or game_info.food_collected >= game_info.total_food:
                 break
             steps += 1
+
+            
 
         
         return global_frame  # Return updated counter!
@@ -241,17 +249,17 @@ class ForageTask:
         
         if place_pheromone:
             self.game.place_pheromone()
-        if test:
-            self.game.move_agent(O1, O2, O3)
+        
+            
 
-            return O1, O2  # Return values for display
+
 
         valid = self.game.move_agent(O1, O2, O3)
        
 
         
 
-        return None
+        return sensor_inputs
 
 
 

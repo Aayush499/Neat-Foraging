@@ -8,7 +8,7 @@ import visualize
 
 # Load config and genome.
 config_file = 'configs/config-simple-ff'
-genome_file = 'best_networks/best-OFalse-F1-holonomic-G200-Nff-S0-RFalse-OTline-SEFalse-OSTrue.pickle'
+genome_file = 'best_networks/best-OFalse-F1-holonomic-G200-Nff-Soutput_fix-RFalse-OTline-SEFalse-OSTrue.pickle'
 
 config = neat.Config(
     neat.DefaultGenome,
