@@ -45,6 +45,7 @@ class Game:
         self.agent = Agent(
             self.window_height // 2 , self.window_width // 2)
         self.total_food = particles
+        # self.total_food = 2
         food_pos = []
         buffer_distance = self.agent.sensor_length  # minimum Euclidean distance from agent (prevents spawn overlap)
         
@@ -61,17 +62,26 @@ class Game:
         #         food_pos.append((x, y))
 
         food_pos = []
-        while len(food_pos) < self.total_food:
-            angle = random.uniform(0, 2 * math.pi)
-            x = self.agent.x + self.agent.sensor_length * math.cos(angle)
-            y = self.agent.y + self.agent.sensor_length * math.sin(angle)
-            dist = ((self.agent.x - x) ** 2 + (self.agent.y - y) ** 2) ** 0.5
-            if dist > buffer_distance:
-                food_pos.append((x, y))
-         
-
+        # while len(food_pos) < self.total_food:
+        #     angle = random.uniform(0, 2 * math.pi)
+        #     x = self.agent.x + self.agent.sensor_length * math.cos(angle)
+        #     y = self.agent.y + self.agent.sensor_length * math.sin(angle)
+        #     dist = ((self.agent.x - x) ** 2 + (self.agent.y - y) ** 2) ** 0.5
+        #     if dist > buffer_distance:
+        #         food_pos.append((x, y))
         
-        
+        prev_node = (self.agent.x, self.agent.y)
+        angle = random.uniform(0, 2 * math.pi)
+        for f in range(self.total_food):
+            #generate an arrangement of food in a line
+            
+            x = prev_node[0] + self.agent.sensor_length * math.cos(angle)
+            y = prev_node[1] + self.agent.sensor_length * math.sin(angle)
+            food_pos.append((x, y))
+            base_angle = math.atan2(y - prev_node[1], x - prev_node[0])
+            angle_variation = random.uniform(-math.pi/6, math.pi/6)
+            prev_node = (x, y)
+            angle += angle_variation
 
         # self.food_list = [Food(x, y) for x, y in food_pos]
         # food_pos = arrangements[arrangement_idx]
@@ -80,7 +90,8 @@ class Game:
 
         # self.optimalTime = 250
         # self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
-        self.optimalTime = (self.agent.sensor_length/self.agent.vel)*4 + 20
+        self.optimalTime = (self.agent.sensor_length/self.agent.vel)*6 + 20
+        
         
         self.score = 0
         self.food_collected = 0
@@ -176,13 +187,13 @@ class Game:
             self.carry_time += 1
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
             if dist < agent.radius + nest.radius:
-                self.score += 150 * (self.discount_factor ** self.carry_time)
+                self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200
                 self.food_collected += 1
                 agent.carrying_food = False
                 if self.food_collected == self.total_food:
                     self.score += 50  # bonus for collecting all food
                 #remove all pheromones when food is delivered to nest
-                self.pheromones = []
+                # self.pheromones = []
                 self.searching_time = 0
             
         
@@ -205,8 +216,21 @@ class Game:
                         pheromone_signal += pheromone.strength / (dist + 0.1)
                         # print(f"Pheromone detected at Sensor {i}, {dist} distance away")
             agent.sensors[i][0] = pheromone_signal
-                
-            if self.agent.food_receptor: 
+
+            # for food in self.food_list:
+            #     dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
+            #     if dist < agent.sensor_length:
+            #         angle_to_food = math.atan2(food.y - agent.y, food.x - agent.x)
+            #         sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
+            #         angle_diff = abs((angle_to_food - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
+            #         if angle_diff < (math.pi / agent.sensor_count):
+            #             agent.sensors[i][1] = 1 - (dist / (agent.sensor_length + 0.1))
+            #             agent.sensors[i][1] =  agent.sensors[i][1] * 2 - 1
+            #             break
+
+            if self.agent.food_receptor:
+                #initialize as -1
+                agent.sensors[i][1] = -1
                 for food in self.food_list:
                     dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                     #round off to 6 decimal places
@@ -217,13 +241,14 @@ class Game:
                         angle_diff = abs((angle_to_food - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
                         if angle_diff < (math.pi / agent.sensor_count):
                             agent.sensors[i][1] = 1 - (dist / (agent.sensor_length + 0.1))
+                            agent.sensors[i][1] =  agent.sensors[i][1] * 2 - 1
                             # print(f"Food detected at Sensor {i}, {dist} distance away")
                             break
         
 
         if not self.agent.food_receptor:
-            agent.sensors[i+1][0] = 0
-            agent.sensors[i+1][1] = 0
+            agent.sensors[i+1][0] = -1
+            agent.sensors[i+1][1] = -1
            
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
@@ -245,7 +270,7 @@ class Game:
             strength =   self.pheromones[i].strength
             # strength -= 1.0/self.optimalTime
             strength *= .99
-            if strength < 0.1:
+            if strength < 0.0001:
                 self.pheromones[i] = None
             else:
                 self.pheromones[i].strength = strength

@@ -22,7 +22,7 @@ class Agent:
         self.vel = 3
         #keep a variable that tells us what types of sensors we have 
         self.nest_receptor = False
-        self.food_receptor = False
+        self.food_receptor = True
         self.pheromone_receptor = True
         self.carrying_food_receptor = False
         self.angle_receptor = False

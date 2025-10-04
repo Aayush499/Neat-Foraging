@@ -156,7 +156,16 @@ class ForageTask:
                     break
             self.game.draw(draw_score=True)
             sensor_inputs = self.move_agent(net, True)
-            if len(sensor_inputs) > 4 and sensor_inputs[4] == 0:
+
+            food_chk = False
+            for sensor in self.agent.sensors:
+            #if sensor[1] == -1 for all sensors, food not detected
+                if sensor[1] -1:
+                    food_chk = True
+                    break
+            if not food_chk:
+                    
+                    
                 font = pygame.font.Font(None, 36)
                 text = font.render("FOOD NOT DETECTED!", True, (255, 0, 0))  # Red color
                 self.game.window.blit(text, (WIDTH/2 -100, HEIGHT/2 - 50)) 
@@ -536,7 +545,7 @@ def test_best_network(config):
 def parser():
     import argparse
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
-    parser.add_argument("--particles", type=int, default=1, help="Number of food particles")
+    parser.add_argument("--particles", type=int, default=2, help="Number of food particles")
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
     parser.add_argument("--generations", type=int, default=200, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
