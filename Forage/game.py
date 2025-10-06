@@ -35,7 +35,8 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99):
+      
         
         
       
@@ -90,7 +91,8 @@ class Game:
 
         # self.optimalTime = 250
         # self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
-        self.optimalTime = (self.agent.sensor_length/self.agent.vel)*6 + 20
+        self.time_constant = (self.agent.sensor_length/self.agent.vel)*3 + 20
+        self.optimalTime = self.time_constant 
         
         
         self.score = 0
@@ -100,7 +102,7 @@ class Game:
         self.window = window
         self.current_direction = ""
 
-        self.discount_factor = 0.999
+        self.discount_factor = 0.99
         self.carry_time = 0
         self.searching_time = 0
         
@@ -144,6 +146,11 @@ class Game:
 
         self.simple_guidance = False
 
+        self.decay_factor = discount_factor
+        self.decay_limit = 0.0001
+        pheromone_lifespan = math.log(self.decay_limit)/math.log(self.decay_factor)
+        self.sum_limit = (1 - self.decay_factor**pheromone_lifespan)/(1 - self.decay_factor)
+
     def _draw_score(self):
         score_text = self.SCORE_FONT.render(
             f"{self.score}", 1, self.WHITE)
@@ -165,7 +172,7 @@ class Game:
        
         agent = self.agent
         nest = self.nest
-        collision_threshold = self.agent.vel
+        collision_threshold = self.agent.vel*1.5
         if not agent.carrying_food:
             self.searching_time += 1
             for food in self.food_list:
@@ -174,7 +181,7 @@ class Game:
                 if dist < collision_threshold:
                     # small reward for picking up food
                     # calculate the score based on how quickly the agent picks up the food
-                    self.score += 10 * (self.discount_factor ** self.searching_time)
+                    self.score += 10 * (self.discount_factor ** self.searching_time) + self.food_collected*30*(self.discount_factor ** self.searching_time)
                     self.agent.x = food.x
                     self.agent.y = food.y
                     agent.carrying_food = True
@@ -187,7 +194,7 @@ class Game:
             self.carry_time += 1
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
             if dist < agent.radius + nest.radius:
-                self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200
+                self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
                 self.food_collected += 1
                 agent.carrying_food = False
                 if self.food_collected == self.total_food:
@@ -195,6 +202,7 @@ class Game:
                 #remove all pheromones when food is delivered to nest
                 # self.pheromones = []
                 self.searching_time = 0
+                self.optimalTime += self.time_constant*2
             
         
 
@@ -215,6 +223,7 @@ class Game:
                         # pheromone_signal += pheromone.strength * (1 - (dist / (agent.sensor_length + 0.1)))
                         pheromone_signal += pheromone.strength / (dist + 0.1)
                         # print(f"Pheromone detected at Sensor {i}, {dist} distance away")
+            # agent.sensors[i][0] = 2*pheromone_signal/self.sum_limit - 1
             agent.sensors[i][0] = pheromone_signal
 
             # for food in self.food_list:
@@ -269,8 +278,9 @@ class Game:
         for i in range(len(self.pheromones)):
             strength =   self.pheromones[i].strength
             # strength -= 1.0/self.optimalTime
-            strength *= .99
-            if strength < 0.0001:
+            # strength *= .99
+            strength *= self.decay_factor
+            if strength < self.decay_limit:
                 self.pheromones[i] = None
             else:
                 self.pheromones[i].strength = strength

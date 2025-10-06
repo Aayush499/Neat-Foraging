@@ -22,8 +22,8 @@ WIDTH, HEIGHT = 1000, 1000
 
 #create a function to generate a string prefix based on the parameters
 def generate_prefix():
-    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch
-    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}-SE{seeded}-OS{o_switch}"
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch, decay_factor
+    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}-SE{seeded}-OS{o_switch}-D{decay_factor}"
 
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
@@ -547,7 +547,7 @@ def parser():
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
     parser.add_argument("--particles", type=int, default=2, help="Number of food particles")
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
-    parser.add_argument("--generations", type=int, default=200, help="Number of generations")
+    parser.add_argument("--generations", type=int, default=300, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
                         )
@@ -561,6 +561,7 @@ def parser():
     parser.add_argument("--seeded", type=str, default="False", help="Use seeded random or not") 
     parser.add_argument("--orientation_switching", type=str, default="True", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
+    parser.add_argument("--decay_factor", type=float, default=0.99, help="Decay factor for pheromone")
     args = parser.parse_args()
     return args
     
@@ -580,7 +581,8 @@ if __name__ == '__main__':
     
     # config_path = os.path.join(local_dir, 'config-replication-plateau')
     args = parser()
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor
+    decay_factor = args.decay_factor
     use_checkpoint = args.use_checkpoint
     seeded = str2bool(args.seeded)
     obstacle_type = args.obstacle_type
