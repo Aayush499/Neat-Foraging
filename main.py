@@ -547,11 +547,11 @@ def parser():
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
     parser.add_argument("--particles", type=int, default=2, help="Number of food particles")
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
-    parser.add_argument("--generations", type=int, default=300, help="Number of generations")
+    parser.add_argument("--generations", type=int, default=500, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
                         )
-    parser.add_argument("--network", type=str, default="ff", help="Type of neural network")
+    parser.add_argument("--network", type=str, default="recursive", help="Type of neural network")
     parser.add_argument("--test", type=str, default="False", help="Test the best network after training")
     #add an argument for adding a sub number for multiple runs
     parser.add_argument("--sub", type=str, default="0", help="Sub title for multiple runs")
@@ -561,7 +561,7 @@ def parser():
     parser.add_argument("--seeded", type=str, default="False", help="Use seeded random or not") 
     parser.add_argument("--orientation_switching", type=str, default="True", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
-    parser.add_argument("--decay_factor", type=float, default=0.99, help="Decay factor for pheromone")
+    parser.add_argument("--decay_factor", type=float, default=0.97, help="Decay factor for pheromone")
     args = parser.parse_args()
     return args
     
