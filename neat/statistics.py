@@ -24,6 +24,7 @@ class StatisticsReporter(BaseReporter):
         self.generation_statistics = []
         #the genomer with the biggest network each generation
         self.most_big_genomes = []
+        self.average_genome_network_sizes = []
 
         #self.generation_cross_validation_statistics = []
 

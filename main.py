@@ -22,8 +22,8 @@ WIDTH, HEIGHT = 1000, 1000
 
 #create a function to generate a string prefix based on the parameters
 def generate_prefix():
-    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch, decay_factor
-    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}-SE{seeded}-OS{o_switch}-D{decay_factor}"
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch, decay_factor, pheromone_receptor
+    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}-SE{seeded}-OS{o_switch}-D{decay_factor}-P{pheromone_receptor}"
 
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
@@ -33,7 +33,7 @@ class ForageTask:
             window = pygame.Surface((width, height))  # Create an off-screen surface
         global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch
+        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor
         )
         self.foods = self.game.food_list
         self.agent = self.game.agent
@@ -156,11 +156,11 @@ class ForageTask:
                     break
             self.game.draw(draw_score=True)
             sensor_inputs = self.move_agent(net, True)
-
+            food_sensor_idx = self.agent.pheromone_receptor + self.agent.food_receptor -1
             food_chk = False
             for sensor in self.agent.sensors:
             #if sensor[1] == -1 for all sensors, food not detected
-                if sensor[1] -1:
+                if sensor[food_sensor_idx] -1:
                     food_chk = True
                     break
             if not food_chk:
@@ -253,7 +253,9 @@ class ForageTask:
         O1 = output[0]
         O2 = output[1]
         O3 = output[2]
-        O4 = output[3]    
+        O4 = -1
+        if agent.pheromone_receptor:
+            O4 = output[3]
         place_pheromone = O4 > -0.25  # Whether it wants to place pheromones
         
         if place_pheromone:
@@ -547,7 +549,7 @@ def parser():
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
     parser.add_argument("--particles", type=int, default=2, help="Number of food particles")
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
-    parser.add_argument("--generations", type=int, default=500, help="Number of generations")
+    parser.add_argument("--generations", type=int, default=700, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
                         )
@@ -562,6 +564,7 @@ def parser():
     parser.add_argument("--orientation_switching", type=str, default="True", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
     parser.add_argument("--decay_factor", type=float, default=0.97, help="Decay factor for pheromone")
+    parser.add_argument("--pheromone_receptor", type=str, default="False", help="Use pheromone receptor or not")
     args = parser.parse_args()
     return args
     
@@ -581,7 +584,9 @@ if __name__ == '__main__':
     
     # config_path = os.path.join(local_dir, 'config-replication-plateau')
     args = parser()
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor
+    pheromone_receptor = str2bool(args.pheromone_receptor)
+    # Set global variables based on parsed arguments
     decay_factor = args.decay_factor
     use_checkpoint = args.use_checkpoint
     seeded = str2bool(args.seeded)
@@ -599,7 +604,10 @@ if __name__ == '__main__':
     if args.network == "ff":
         config_filename = 'config-simple-ff'
     elif args.network == "recursive":
-        config_filename = 'config-simple-recursive'
+        if pheromone_receptor:
+            config_filename = 'config-simple-recursive'
+        else:
+            config_filename = 'config-simple-recursive-no-pheromone'
     else:
         raise ValueError("Invalid network type. Choose 'ff' or 'recursive'.")
     config_path = os.path.join(local_dir+'/configs/', config_filename)

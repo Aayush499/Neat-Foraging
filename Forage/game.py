@@ -35,7 +35,7 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True):
       
         
         
@@ -44,7 +44,7 @@ class Game:
         self.window_height = window_height
 
         self.agent = Agent(
-            self.window_height // 2 , self.window_width // 2)
+            self.window_height // 2 , self.window_width // 2, pheromone_receptor=pheromone_receptor)
         self.total_food = particles
         # self.total_food = 2
         food_pos = []
@@ -210,21 +210,25 @@ class Game:
 
         agent = self.agent
         nest = self.nest
+        
         for i in range(agent.sensor_count):
+            receptor_cnt = 0
             pheromone_signal = 0
-            for pheromone in self.pheromones:
-                dist = ((agent.x - pheromone.x) ** 2 + (agent.y - pheromone.y) ** 2) ** 0.5
-                # if dist < agent.sensor_length, add the strength of the pheromone to the sensor signal
-                if dist <= agent.sensor_length:
-                    angle_to_pheromone = math.atan2(pheromone.y - agent.y, pheromone.x - agent.x)
-                    sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
-                    angle_diff = abs((angle_to_pheromone - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
-                    if angle_diff < (math.pi / agent.sensor_count):
-                        # pheromone_signal += pheromone.strength * (1 - (dist / (agent.sensor_length + 0.1)))
-                        pheromone_signal += pheromone.strength / (dist + 0.1)
-                        # print(f"Pheromone detected at Sensor {i}, {dist} distance away")
-            # agent.sensors[i][0] = 2*pheromone_signal/self.sum_limit - 1
-            agent.sensors[i][0] = pheromone_signal
+            if self.agent.pheromone_receptor:
+                for pheromone in self.pheromones:
+                    dist = ((agent.x - pheromone.x) ** 2 + (agent.y - pheromone.y) ** 2) ** 0.5
+                    # if dist < agent.sensor_length, add the strength of the pheromone to the sensor signal
+                    if dist <= agent.sensor_length:
+                        angle_to_pheromone = math.atan2(pheromone.y - agent.y, pheromone.x - agent.x)
+                        sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
+                        angle_diff = abs((angle_to_pheromone - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
+                        if angle_diff < (math.pi / agent.sensor_count):
+                            # pheromone_signal += pheromone.strength * (1 - (dist / (agent.sensor_length + 0.1)))
+                            pheromone_signal += pheromone.strength / (dist + 0.1)
+                            # print(f"Pheromone detected at Sensor {i}, {dist} distance away")
+                # agent.sensors[i][0] = 2*pheromone_signal/self.sum_limit - 1
+                agent.sensors[i][receptor_cnt] = pheromone_signal
+                receptor_cnt += 1
 
             # for food in self.food_list:
             #     dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
@@ -239,7 +243,7 @@ class Game:
 
             if self.agent.food_receptor:
                 #initialize as -1
-                agent.sensors[i][1] = -1
+                agent.sensors[i][receptor_cnt] = -1
                 for food in self.food_list:
                     dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                     #round off to 6 decimal places
@@ -249,12 +253,14 @@ class Game:
                         sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
                         angle_diff = abs((angle_to_food - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
                         if angle_diff < (math.pi / agent.sensor_count):
-                            agent.sensors[i][1] = 1 - (dist / (agent.sensor_length + 0.1))
-                            agent.sensors[i][1] =  agent.sensors[i][1] * 2 - 1
+                            agent.sensors[i][receptor_cnt] = 1 - (dist / (agent.sensor_length + 0.1))
+                            agent.sensors[i][receptor_cnt] =  agent.sensors[i][receptor_cnt] * 2 - 1
                             # print(f"Food detected at Sensor {i}, {dist} distance away")
+                    
                             break
+                receptor_cnt += 1
         
-
+                        
         if not self.agent.food_receptor:
             agent.sensors[i+1][0] = -1
             agent.sensors[i+1][1] = -1
@@ -314,11 +320,13 @@ class Game:
         messages = []  # Store messages to display
         font = pygame.font.Font(None, 24)  # Create a font object
         #check agent's sensors for collisions with food, pheromones and nest and display a message in the window if there is a collision
+        #food sensors idx
+        food_sensor_idx = self.agent.pheromone_receptor + self.agent.food_receptor -1
         for i in range(agent.sensor_count):
             
             if agent.food_receptor:
-                if agent.sensors[i][agent.sensor_segments] >0 :
-                    messages.append(f"Food detected at Sensor {i}, {agent.sensors[i][agent.sensor_segments]} distance away")
+                if agent.sensors[i][food_sensor_idx] >0 :
+                    messages.append(f"Food detected at Sensor {i}, {agent.sensors[i][food_sensor_idx]} distance away")
 
         padding = 10
         line_height = 20

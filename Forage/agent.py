@@ -6,7 +6,7 @@ YELLOW = (255, 255, 0)
 
 class Agent:
       
-    def __init__(self, x, y):
+    def __init__(self, x, y, pheromone_receptor=True):
         self.x = self.original_x = x
         self.y = self.original_y = y
         self.sensor_count = 4
@@ -23,7 +23,7 @@ class Agent:
         #keep a variable that tells us what types of sensors we have 
         self.nest_receptor = False
         self.food_receptor = True
-        self.pheromone_receptor = True
+        self.pheromone_receptor = pheromone_receptor
         self.carrying_food_receptor = False
         self.angle_receptor = False
         self.sensors = [[0 for _ in range(self.sensor_segments*self.pheromone_receptor + self.food_receptor + self.nest_receptor + self.angle_receptor) ] for _ in range(self.sensor_count)]
