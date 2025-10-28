@@ -6,12 +6,13 @@ YELLOW = (255, 255, 0)
 
 class Agent:
       
-    def __init__(self, x, y, pheromone_receptor=True):
+    def __init__(self, x, y, pheromone_receptor=True, num_sensors=8):
         self.x = self.original_x = x
         self.y = self.original_y = y
-        self.sensor_count = 4
+        self.sensor_count = num_sensors
         self.theta = math.pi/2 #orientation of agent
         # self.sensor_count = 4
+        
         # self.sensor_segments = 8
         self.sensor_segments = 1
         self.carrying_food = False

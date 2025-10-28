@@ -17,7 +17,10 @@
             // "args": ["--obstacles", "True", "--network", "recursive", "--ricochet", "False"]
             // "args": ["--network", "recursive", "--ricochet", "True",  "--obstacle_type", "angular", "--sub", "switching", "--test", "true"]
             // "args": ["--generations", "1"]
-            "args": ["--sub", "normalized_signals_reduced_time", "--test","true"]
+            // "args": ["--sub", "normalized_signals_reduced_time", "--test","true"]
+            // "args" : ["--network", "recursive", "--num_sensors", "8"]
+            // python3 main.py --num_sensors 8 --network recursive --pheromone_receptor false --sub mean_criterion_test1 --generations 500
+            "args" : ["--num_sensors", "8", "--network", "recursive", "--pheromone_receptor", "false", "--sub", "mean_criterion_test1", "--generations", "500"]
         }
     ]
 }

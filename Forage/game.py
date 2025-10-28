@@ -35,16 +35,17 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True):
+         
       
         
         
-      
+        self.teleport = teleport
         self.window_width = window_width
         self.window_height = window_height
 
         self.agent = Agent(
-            self.window_height // 2 , self.window_width // 2, pheromone_receptor=pheromone_receptor)
+            self.window_height // 2 , self.window_width // 2, pheromone_receptor=pheromone_receptor, num_sensors=num_sensors)
         self.total_food = particles
         # self.total_food = 2
         food_pos = []
@@ -72,26 +73,39 @@ class Game:
         #         food_pos.append((x, y))
         
         prev_node = (self.agent.x, self.agent.y)
-        angle = random.uniform(0, 2 * math.pi)
+        angle = random.uniform(0, 2 * math.pi) if o_switch else math.pi/2
+        #let the dist of food after the first food be sensor lenght - collision threshold if calibrated food check is true
+        food_dist = self.agent.sensor_length - collision_threshold if food_calibration else self.agent.sensor_length
+        first_chk = True
+        food_placed = False
+        dist = self.agent.sensor_length
         for f in range(self.total_food):
             #generate an arrangement of food in a line
-            
-            x = prev_node[0] + self.agent.sensor_length * math.cos(angle)
-            y = prev_node[1] + self.agent.sensor_length * math.sin(angle)
+            if not first_chk:
+                dist = food_dist
+            x = prev_node[0] + dist * math.cos(angle)
+            y = prev_node[1] + dist * math.sin(angle)
             food_pos.append((x, y))
             base_angle = math.atan2(y - prev_node[1], x - prev_node[0])
-            angle_variation = random.uniform(-math.pi/6, math.pi/6)
+            angle_variation = random.uniform(-math.pi/6, math.pi/6) if o_switch else (100/180)*math.pi
             prev_node = (x, y)
-            angle += angle_variation
+            angle += angle_variation if not food_placed else 0
+            first_chk = False
+            food_placed = True
 
         # self.food_list = [Food(x, y) for x, y in food_pos]
         # food_pos = arrangements[arrangement_idx]
         self.food_list = [Food(x, y) for x, y in food_pos]
         
 
+        self.collision_threshold = collision_threshold
+        self.time_constant = time_constant
+        self.time_bonus_multiplier = time_bonus_multiplier
+
         # self.optimalTime = 250
         # self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
-        self.time_constant = (self.agent.sensor_length/self.agent.vel)*3 + 20
+        # self.time_constant = (self.agent.sensor_length/self.agent.vel)*3 + 20
+        # self.optimalTime = self.time_constant 
         self.optimalTime = self.time_constant 
         
         
@@ -151,6 +165,9 @@ class Game:
         pheromone_lifespan = math.log(self.decay_limit)/math.log(self.decay_factor)
         self.sum_limit = (1 - self.decay_factor**pheromone_lifespan)/(1 - self.decay_factor)
 
+         
+        
+
     def _draw_score(self):
         score_text = self.SCORE_FONT.render(
             f"{self.score}", 1, self.WHITE)
@@ -172,18 +189,20 @@ class Game:
        
         agent = self.agent
         nest = self.nest
-        collision_threshold = self.agent.vel*1.5
+        # collision_threshold = self.agent.vel*1.5
+        collision_threshold = self.collision_threshold
         if not agent.carrying_food:
             self.searching_time += 1
             for food in self.food_list:
                 dist = ((agent.x - food.x) ** 2 + (agent.y - food.y) ** 2) ** 0.5
                 # if dist < agent.radius + food.radius:
-                if dist < collision_threshold:
+                if dist <= collision_threshold:
                     # small reward for picking up food
                     # calculate the score based on how quickly the agent picks up the food
                     self.score += 10 * (self.discount_factor ** self.searching_time) + self.food_collected*30*(self.discount_factor ** self.searching_time)
-                    self.agent.x = food.x
-                    self.agent.y = food.y
+                    if self.teleport:
+                        self.agent.x = food.x
+                        self.agent.y = food.y
                     agent.carrying_food = True
                     self.carry_time = 0
                     self.food_list.remove(food)
@@ -193,7 +212,8 @@ class Game:
           #heavy reward for bringing food to the nest, scaled by how quickly the agent does it
             self.carry_time += 1
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
-            if dist < agent.radius + nest.radius:
+            # if dist < agent.radius + nest.radius:
+            if dist <= collision_threshold:
                 self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
                 self.food_collected += 1
                 agent.carrying_food = False
@@ -202,7 +222,10 @@ class Game:
                 #remove all pheromones when food is delivered to nest
                 # self.pheromones = []
                 self.searching_time = 0
-                self.optimalTime += self.time_constant*2
+                # self.optimalTime += self.time_constant*2
+                self.optimalTime += self.time_constant*self.time_bonus_multiplier
+        
+        
             
         
 
@@ -253,8 +276,8 @@ class Game:
                         sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
                         angle_diff = abs((angle_to_food - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
                         if angle_diff < (math.pi / agent.sensor_count):
-                            agent.sensors[i][receptor_cnt] = 1 - (dist / (agent.sensor_length + 0.1))
-                            agent.sensors[i][receptor_cnt] =  agent.sensors[i][receptor_cnt] * 2 - 1
+                            agent.sensors[i][receptor_cnt] = max(2* (1 - (dist / (agent.sensor_length + 0.1))) - 1 , agent.sensors[i][receptor_cnt])
+                            # agent.sensors[i][receptor_cnt] =  agent.sensors[i][receptor_cnt] * 2 - 1
                             # print(f"Food detected at Sensor {i}, {dist} distance away")
                     
                             break
