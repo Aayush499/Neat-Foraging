@@ -32,7 +32,7 @@ class StatisticsReporter(BaseReporter):
         largest_genome = max(population.values(), key=lambda g: len(g.nodes))
         self.most_big_genomes.append(copy.deepcopy(largest_genome))
 
-        self.most_fit_genomes.append(copy.deepcopy(best_genome))
+        # self.most_fit_genomes.append(copy.deepcopy(best_genome))
 
         # Store the fitnesses of the members of each currently active species.
         species_stats = {}

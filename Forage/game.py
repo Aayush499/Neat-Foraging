@@ -35,7 +35,7 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False):
          
       
         
@@ -87,7 +87,7 @@ class Game:
             y = prev_node[1] + dist * math.sin(angle)
             food_pos.append((x, y))
             base_angle = math.atan2(y - prev_node[1], x - prev_node[0])
-            angle_variation = random.uniform(-math.pi/6, math.pi/6) if o_switch else (100/180)*math.pi
+            angle_variation = random.uniform(-math.pi/3, math.pi/3) if o_switch else (100/180)*math.pi
             prev_node = (x, y)
             angle += angle_variation if not food_placed else 0
             first_chk = False
@@ -128,8 +128,8 @@ class Game:
         ]
 
         #choose a random angle from 0 to 2pi for the agent
-        if o_switch:
-            self.agent.theta = random.uniform(0, 2*math.pi)
+        # if o_switch:
+        #     self.agent.theta = random.uniform(0, 2*math.pi)
         # self.agent.theta = (arrangement_idx % 4) * (math.pi/2)
         if obstacles:
             if obstacle_type == "angular":
@@ -165,6 +165,10 @@ class Game:
         pheromone_lifespan = math.log(self.decay_limit)/math.log(self.decay_factor)
         self.sum_limit = (1 - self.decay_factor**pheromone_lifespan)/(1 - self.decay_factor)
 
+        self.sparse = sparse
+
+        self.milestone  =1
+
          
         
 
@@ -199,7 +203,11 @@ class Game:
                 if dist <= collision_threshold:
                     # small reward for picking up food
                     # calculate the score based on how quickly the agent picks up the food
-                    self.score += 10 * (self.discount_factor ** self.searching_time) + self.food_collected*30*(self.discount_factor ** self.searching_time)
+                    if not self.sparse:
+                        self.score += 100 * (self.discount_factor ** self.searching_time) + self.food_collected*30*(self.discount_factor ** self.searching_time)
+                    else:
+                        self.score += 10**(self.milestone)
+                        self.milestone += 1
                     if self.teleport:
                         self.agent.x = food.x
                         self.agent.y = food.y
@@ -214,11 +222,15 @@ class Game:
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
             # if dist < agent.radius + nest.radius:
             if dist <= collision_threshold:
-                self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
-                self.food_collected += 1
+                if not self.sparse:
+                    self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
+                else:
+                    self.score +=  10**(self.milestone)
+                    self.milestone += 1
+                self.food_collected += 1   
                 agent.carrying_food = False
                 if self.food_collected == self.total_food:
-                    self.score += 50  # bonus for collecting all food
+                    self.score += 1  # bonus for collecting all food
                 #remove all pheromones when food is delivered to nest
                 # self.pheromones = []
                 self.searching_time = 0

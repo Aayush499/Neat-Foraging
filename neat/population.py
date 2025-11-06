@@ -2,7 +2,8 @@
 from __future__ import print_function
 
 
-
+import os
+import pickle
 from neat.reporting import ReporterSet
 from neat.math_util import mean
 from neat.six_util import iteritems, itervalues
@@ -58,7 +59,7 @@ class Population(object):
     def remove_reporter(self, reporter):
         self.reporters.remove(reporter)
 
-    def run(self, fitness_function, n=None):
+    def run(self, fitness_function, n=None, best_genomes_dir=None):
         """
         Runs NEAT's genetic algorithm for at most n generations.  If n
         is None, run until solution is found or extinction occurs.
@@ -98,6 +99,12 @@ class Population(object):
                 if best is None or g.fitness > best.fitness:
                     best = g
             self.reporters.post_evaluate(self.config, self.population, self.species, best)
+
+            if best_genomes_dir is not None:
+                pickle_filename = os.path.join(best_genomes_dir, f"best_genome_gen_{self.generation}.pkl")
+                with open(pickle_filename, "wb") as f:
+                    pickle.dump(best, f)
+        
 
             # Track the best genome ever seen.
             if self.best_genome is None or best.fitness > self.best_genome.fitness:
