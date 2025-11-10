@@ -21,7 +21,9 @@
             // "args" : ["--network", "recursive", "--num_sensors", "8"]
             // python3 main.py --num_sensors 8 --network recursive --pheromone_receptor false --sub mean_criterion_test1 --generations 500
             // checkpoint-OFalse-F3-holonomic-G700-Nrecursive-Sdefault_params_dense_test_1-RFalse-OTline-SEFalse-OSTrue-D0.97-PFalse-CT7-TC600.0-TBonus4.0-TFalse-NS8-FCTrue-Fmax
-            "args" : ["--sparse_reward", "False", "--sub", "default_params_dense_test_1", "--generations", "480", "--use_checkpoint", "checkpoints/checkpoint-OFalse-F3-holonomic-G700-Nrecursive-Sdefault_params_dense_test_1-RFalse-OTline-SEFalse-OSTrue-D0.97-PFalse-CT7-TC600.0-TBonus4.0-TFalse-NS8-FCTrue-Fmax/neat-checkpoint-479"]
+            // "args" : ["--sparse_reward", "False", "--sub", "default_params_dense_test_1", "--generations", "480",
+            // --test true --best aayush_baby_3
+              "args" : ["--sub","default_params_sparse_fixed_activation_fixed_input_test_2"]
         }
     ]
 }

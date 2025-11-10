@@ -17,7 +17,7 @@ import csv
 import tempfile
 import math
 SIMPLE = False
-NUM_RUNS = 10 if not SIMPLE else 1
+
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
 # chosen_arrangement = [True] *18
 # chosen_arrangement[6] = True
@@ -28,8 +28,8 @@ WIDTH, HEIGHT = 1000, 1000
 # SPARSE_REWARD = True
 #create a function to generate a string prefix based on the parameters
 def generate_prefix():
-    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, food_calibration, fitness_criterion
-    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}-SE{seeded}-OS{o_switch}-D{decay_factor}-P{pheromone_receptor}-CT{collision_threshold}-TC{time_constant}-TBonus{time_bonus_multiplier}-T{teleport}-NS{num_sensors}-FC{food_calibration}-F{fitness_criterion}"
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, food_calibration, fitness_criterion, stagnation
+    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}-SE{seeded}-OS{o_switch}-D{decay_factor}-P{pheromone_receptor}-CT{collision_threshold}-TC{time_constant}-TBonus{time_bonus_multiplier}-T{teleport}-NS{num_sensors}-FC{food_calibration}-F{fitness_criterion}-St{stagnation}"
 
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
@@ -175,6 +175,10 @@ class ForageTask:
                 font = pygame.font.Font(None, 36)
                 text = font.render("FOOD NOT DETECTED!", True, (255, 0, 0))  # Red color
                 self.game.window.blit(text, (WIDTH/2 -100, HEIGHT/2 - 50)) 
+            #render clock
+            font = pygame.font.Font(None, 36)
+            text = font.render(f"Clock: {self.game.optimalTime -steps}", True, (255, 255, 255))
+            self.game.window.blit(text, (10, 10))
 
             
             pygame.display.update()
@@ -199,7 +203,7 @@ class ForageTask:
 
 
 
-    def train_ai(self, genome, config, draw=False):
+    def train_ai(self, genome, config, draw=False, gen_num=0, genome_idx=0):
         """
         Train the AI by passing  NEAT neural networks and the NEAt config object.
    
@@ -210,9 +214,11 @@ class ForageTask:
         draw = False
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         self.genome = genome
-
+    
         clock = 0
 
+        
+            
         if draw:
             win = pygame.display.set_mode((WIDTH, HEIGHT))
             self.game.window = win
@@ -226,10 +232,22 @@ class ForageTask:
 
             self.move_agent(net )
 
+
             if draw:
+                
                 self.game.draw(draw_score=False, draw_hits=True)
+                #render the clock on the window
+                font = pygame.font.Font(None, 36)
+                text = font.render(f"Clock: {self.game.optimalTime -clock}", True, (255, 255, 255))
+                self.game.window.blit(text, (10, 10))
+
+                #display gen num and genome idx
+                gen_text = font.render(f"Gen: {gen_num}, Genome: {genome_idx}", True, (255, 255, 255))
+                self.game.window.blit(gen_text, (10, 50))
 
                 pygame.display.update()
+
+            
 
             # duration = time.time() - start_time
             if self.game.optimalTime <= clock or game_info.food_collected >= game_info.total_food :
@@ -297,7 +315,7 @@ class ForageTask:
 
 
 
-def eval_genomes(genomes, config):
+def eval_genomes(genomes, config, gen_num=0):
     """
     Run each genome a set number of time to determine the fitness.
     """
@@ -305,10 +323,11 @@ def eval_genomes(genomes, config):
     draw = False
     win = None if not draw else pygame.display.set_mode((width, height))
     # pygame.display.set_caption("Forage")
-
+    
     for i, (genome_id, genome) in enumerate(genomes):
         print(round(i/len(genomes) * 100), end=" ")
         genome.fitness = 0
+        display= False
         for run in range(NUM_RUNS):
            
             # if not chosen_arrangement[run]:
@@ -317,11 +336,16 @@ def eval_genomes(genomes, config):
 
             forage = ForageTask(win, width, height, arrangement_idx=run)
 
-            force_quit = forage.train_ai(genome, config, draw)
-            
+            force_quit = forage.train_ai(genome, config, display, gen_num=gen_num, genome_idx=i)
+            if genome.fitness >=0  :
+                display = True
+                
             if force_quit:
                 quit()
         genome.fitness /= NUM_RUNS
+        #close pygame window if open
+        if win is not None:
+            pygame.display.quit()
         # genome.fitness
         # print(f"Genome {genome_id}:, Fitness: {genome.fitness}")
 
@@ -582,19 +606,20 @@ def parser():
     parser.add_argument("--best", type=str, default="", help="Best network file to test")
     parser.add_argument("--obstacle_type", type=str, default="line", help="Type of obstacle arrangement")
     parser.add_argument("--seeded", type=str, default="False", help="Use seeded random or not") 
-    parser.add_argument("--orientation_switching", type=str, default="True", help="Use orientation switching or not")
+    parser.add_argument("--orientation_switching", type=str, default="False", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
     parser.add_argument("--decay_factor", type=float, default=0.97, help="Decay factor for pheromone")
     parser.add_argument("--pheromone_receptor", type=str, default="False", help="Use pheromone receptor or not")
     parser.add_argument("--collision_threshold", type=float, default=10, help="Collision threshold for agent")
-    parser.add_argument("--time_constant", type=float, default=600.0, help="Time constant for optimal time")
-    parser.add_argument("--time_bonus_multiplier", type=float, default=4.0, help="Time bonus multiplier for fitness calculation")
+    parser.add_argument("--time_constant", type=float, default=450.0, help="Time constant for optimal time")
+    parser.add_argument("--time_bonus_multiplier", type=float, default=2.0, help="Time bonus multiplier for fitness calculation")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
     parser.add_argument('--fitness_criterion', type=str, default='max', help='Fitness criterion to use (mean, max, etc.)')
     parser.add_argument('--endless', type=str, default='True', help='Run in endless mode or not')
     parser.add_argument('--sparse_reward', type=str, default='True', help='Use sparse reward or not')
+    parser.add_argument('--stagnation', type=int, default=50, help='Number of generations for stagnation before reset')
     args = parser.parse_args()
     return args
     
@@ -614,7 +639,8 @@ if __name__ == '__main__':
     
     # config_path = os.path.join(local_dir, 'config-replication-plateau')
     args = parser()
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS
+    stagnation = args.stagnation
     SPARSE_REWARD = str2bool(args.sparse_reward)
     num_sensors = args.num_sensors
     endless = str2bool(args.endless)
@@ -640,6 +666,8 @@ if __name__ == '__main__':
     collision_threshold = args.collision_threshold
     time_constant = args.time_constant
     time_bonus_multiplier = args.time_bonus_multiplier
+    #NUM runs should be 1 if orientation switching is off, else 10
+    NUM_RUNS = 10 if o_switch else 1
     
     # config_filename = 'config-simple'
     default_param = True
@@ -680,9 +708,12 @@ if __name__ == '__main__':
     cfg['NEAT']['fitness_criterion'] = args.fitness_criterion
 
     if SPARSE_REWARD:
-        cfg['NEAT']['fitness_threshold'] = '1111110'
+        # cfg['NEAT']['fitness_threshold'] = '1111110'
+        cfg['NEAT']['fitness_threshold'] = '60'
     else:
         cfg['NEAT']['fitness_threshold'] = '700'
+
+    cfg['DefaultStagnation']['max_stagnation'] = str(stagnation)
 
 
 

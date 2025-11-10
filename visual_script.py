@@ -16,7 +16,7 @@ network_type = 'recursive'  # Default value
 
 # Load config and genome.
 config_path = 'configs/config-default'
-genome_file = 'best_networks/aayush_baby.pickle'
+genome_file = 'best_networks/aayush_baby_3.pickle'
 
 cfg = configparser.ConfigParser()
 cfg.read(config_path)
@@ -59,6 +59,8 @@ network_type = 'recursive'  # Default value
 #     network_type = filename[n_index + 2:].split('-')[0]
 cfg['DefaultGenome']['num_inputs'] = str(input_size)
 cfg['DefaultGenome']['num_hidden'] = str(hidden_size)
+#outputs
+cfg['DefaultGenome']['num_outputs'] = '3'
 if network_type == 'ff':
     cfg['DefaultGenome']['feed_forward'] = 'True'
 else:
