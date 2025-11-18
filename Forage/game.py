@@ -35,7 +35,7 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic"):
          
       
         
@@ -176,6 +176,15 @@ class Game:
 
         self.food_seek_reward = .01
         self.nest_seek_reward = .02
+        self.general_movement_reward_after_food_collection = .01
+        self.persistent_movement_reward = 1
+
+        
+
+        self.movement_type = movement_type
+
+        self.clock =0
+        self.pulse_interval = 1  # frames till food removal
 
          
         
@@ -206,7 +215,7 @@ class Game:
        
         agent = self.agent
         nest = self.nest
-        milestone = False
+        milestone = True
         # collision_threshold = self.agent.vel*1.5
         collision_threshold = self.collision_threshold
         if not agent.carrying_food:
@@ -217,12 +226,16 @@ class Game:
                 if dist <= collision_threshold :
                     # small reward for picking up food
                     # calculate the score based on how quickly the agent picks up the food
-                    if not self.sparse:
-                        self.score += 100 * (self.discount_factor ** self.searching_time) + self.food_collected*30*(self.discount_factor ** self.searching_time)
-                    else:
-                        self.score += 10**(self.milestone)
+                    if self.movement_type != "1d":
+                        if not self.sparse :
+                            
+                            # self.score += 100 * (self.discount_factor ** self.searching_time) + self.food_collected*30*(self.discount_factor ** self.searching_time)
+                            self.score += 10**(self.milestone) * (self.discount_factor ** self.searching_time) 
+                        else:
+                            self.score += 10**(self.milestone)
                         if milestone:
                             self.milestone += 1
+                    
                     if self.teleport:
                         self.agent.x = food.x
                         self.agent.y = food.y
@@ -236,13 +249,14 @@ class Game:
             self.carry_time += 1
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
             # if dist < agent.radius + nest.radius:
-            if dist <= agent.radius + nest.radius :
+            if dist <= collision_threshold :
                 if not self.sparse:
-                    self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
+                    # self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
+                    self.score += 10**(self.milestone) * (self.discount_factor ** self.carry_time)
                 else:
                     self.score +=  10**(self.milestone)
-                    if milestone:
-                        self.milestone += 1
+                if milestone:
+                    self.milestone += 1
                 self.food_collected += 1   
                 agent.carrying_food = False
                 if self.food_collected == self.total_food:
@@ -458,11 +472,19 @@ class Game:
         # X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) 
         # Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta) 
         self.agent.theta = self.agent.theta + math.pi * O3
-        #make sure self.agent.theta is between 0 and 2pi
         self.agent.theta = self.agent.theta % (2 * math.pi)
-        X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) + self.agent.vel * O2* math.cos(self.agent.theta + math.pi/2)
-        Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta) + self.agent.vel * O2* math.sin(self.agent.theta + math.pi/2)
+        #make sure self.agent.theta is between 0 and 2pi
 
+        if self.movement_type == "holonomic": 
+        
+            X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) + self.agent.vel * O2* math.cos(self.agent.theta + math.pi/2)
+            Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta) + self.agent.vel * O2* math.sin(self.agent.theta + math.pi/2)
+        elif self.movement_type == "tank":
+            X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) 
+            Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta)
+        elif self.movement_type == "1d":
+            X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) 
+            Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta)
         distance_to_travel = ((X - old_X) ** 2 + (Y - old_Y) ** 2) ** 0.5
 
         if X < 0 or X > self.window_width or Y < 0 or Y > self.window_height:
@@ -548,18 +570,36 @@ class Game:
 
         if self.simple_guidance:
             #give a small score if agent is moving towards food when self.carrying_food is False
-            if not self.agent.carrying_food:
-                dist1 = min([((self.agent.x - food.x) ** 2 + (self.agent.y - food.y) ** 2) ** 0.5 for food in self.food_list])
-                dist2 = min([((old_X - food.x) ** 2 + (old_Y - food.y) ** 2) ** 0.5 for food in self.food_list])
-                if dist1 < dist2:
-                    self.score += self.food_seek_reward 
-                    self.current_direction = "Towards Food"
+            if self.movement_type != "1d":
+                if not self.agent.carrying_food:
+                    dist1 = min([((self.agent.x - food.x) ** 2 + (self.agent.y - food.y) ** 2) ** 0.5 for food in self.food_list])
+                    dist2 = min([((old_X - food.x) ** 2 + (old_Y - food.y) ** 2) ** 0.5 for food in self.food_list])
+                    if dist1 < dist2:
+                        self.score += self.food_seek_reward 
+                        self.current_direction = "Towards Food"
+                else:
+                    dist1 = ((self.agent.x - self.nest.x) ** 2 + (self.agent.y - self.nest.y) ** 2) ** 0.5
+                    dist2 = ((old_X - self.nest.x) ** 2 + (old_Y - self.nest.y) ** 2) ** 0.5
+                    if dist1 < dist2:
+                        self.score += self.nest_seek_reward
+                        self.current_direction = "Towards Nest"
+
+                    if dist1!= dist2:
+                        self.score += self.general_movement_reward_after_food_collection
             else:
-                dist1 = ((self.agent.x - self.nest.x) ** 2 + (self.agent.y - self.nest.y) ** 2) ** 0.5
-                dist2 = ((old_X - self.nest.x) ** 2 + (old_Y - self.nest.y) ** 2) ** 0.5
-                if dist1 < dist2:
-                    self.score += self.nest_seek_reward
-                    self.current_direction = "Towards Nest"
+                non_zero_flag = False
+                #go through agent's input sensors for any non zero value
+                for i in range(self.agent.sensor_count):
+                    for j in range(len(self.agent.sensors[i])):
+                        if self.agent.sensors[i][j] != 0:
+                            non_zero_flag = True
+                            break
+                    if non_zero_flag:
+                        break
+                #if all values are zero and agent is still moving, reward it with persistent movement reward
+                if not non_zero_flag and O1 != 0:
+                    self.score += self.persistent_movement_reward
+                    self.current_direction = "Exploring"
 
         return True
 
@@ -583,7 +623,8 @@ class Game:
         
         game_info = GameInformation(
             self.score, self.food_collected, self.total_food, self.food_list)
-
+        
+         
         return game_info
 
 

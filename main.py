@@ -39,7 +39,7 @@ class ForageTask:
             window = pygame.Surface((width, height))  # Create an off-screen surface
         global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, time_bonus_multiplier=time_bonus_multiplier, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD)
+        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, time_bonus_multiplier=time_bonus_multiplier, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type)
         self.foods = self.game.food_list
         self.agent = self.game.agent
         self.pheromone = self.game.pheromones
@@ -212,7 +212,11 @@ class ForageTask:
         run = True
         start_time = time.time()
         draw = False
-        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        # net = neat.nn.FeedForwardNetwork.create(genome, config)
+        if network_type == 'ff':
+            net = neat.nn.FeedForwardNetwork.create(genome, config)
+        else:
+            net = neat.nn.RecurrentNetwork.create(genome, config)
         self.genome = genome
     
         clock = 0
@@ -273,10 +277,21 @@ class ForageTask:
         
             
         output = net.activate(sensor_inputs)  
-
-        O1 = output[0]
-        O2 = output[1]
-        O3 = output[2]
+        index = 0
+        O1 = output[index]
+        if movement_type == "holonomic":
+            O2 = output[index + 1]
+            O3 = output[index + 2]
+            index +=3
+        elif movement_type == "tank":
+            O2 = 0
+            O3 = output[index + 1]
+            index +=2
+        elif movement_type == "1d":
+            O2 = 0
+            O3 = 0
+            index +=1
+        
         
         if test:
             O4 = 1
@@ -548,6 +563,7 @@ def test_best_network(config):
     global obstacles, particles, generations, movement_type, network_type, sub, ricochet, best_file
     prefix_string = generate_prefix()
     frame_dir = f'video_dir/{prefix_string}_frames'
+    postfix = '.pkl'
     # os.makedirs(frame_dir, exist_ok=True)
     #make directory if it doesn't exist, if it exists, delete all files in it
     if not os.path.exists(frame_dir):
@@ -556,11 +572,17 @@ def test_best_network(config):
         files = glob.glob(os.path.join(frame_dir, '*'))
         for f in files:
             os.remove(f)
-            
-    best_dir = "best_networks"
-    filename = os.path.join(best_dir, f"best-{prefix_string}.pickle")
+    
+    choose_current = True
+    best_dir = "best_networks" 
+    #if choose_current is true, use current working directory
+    if choose_current:
+        best_dir = os.getcwd()
+
+
+    filename = os.path.join(best_dir, f"best-{prefix_string}{postfix}")
     if best_file != "":
-        filename = os.path.join(best_dir, f"{best_file}.pickle")
+        filename = os.path.join(best_dir, f"{best_file}{postfix}")
 
     if not os.path.exists(filename):
         print(f"Best network file {filename} not found!")
@@ -573,7 +595,11 @@ def test_best_network(config):
     for i in range(NUM_RUNS):
         # if not chosen_arrangement[i]:
         #     continue
-        winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+        # winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+        if network_type == 'ff':
+            winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+        else:
+            winner_net = neat.nn.RecurrentNetwork.create(winner, config)
 
         width, height = WIDTH, HEIGHT
         win = pygame.display.set_mode((width, height))
@@ -594,7 +620,7 @@ def parser():
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
     parser.add_argument("--particles", type=int, default=3, help="Number of food particles")
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
-    parser.add_argument("--generations", type=int, default=700, help="Number of generations")
+    parser.add_argument("--generations", type=int, default=500, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
                         )
@@ -606,7 +632,7 @@ def parser():
     parser.add_argument("--best", type=str, default="", help="Best network file to test")
     parser.add_argument("--obstacle_type", type=str, default="line", help="Type of obstacle arrangement")
     parser.add_argument("--seeded", type=str, default="False", help="Use seeded random or not") 
-    parser.add_argument("--orientation_switching", type=str, default="False", help="Use orientation switching or not")
+    parser.add_argument("--orientation_switching", type=str, default="true", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
     parser.add_argument("--decay_factor", type=float, default=0.97, help="Decay factor for pheromone")
     parser.add_argument("--pheromone_receptor", type=str, default="False", help="Use pheromone receptor or not")
@@ -617,9 +643,9 @@ def parser():
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
     parser.add_argument('--fitness_criterion', type=str, default='max', help='Fitness criterion to use (mean, max, etc.)')
-    parser.add_argument('--endless', type=str, default='True', help='Run in endless mode or not')
+    parser.add_argument('--endless', type=str, default='False', help='Run in endless mode or not')
     parser.add_argument('--sparse_reward', type=str, default='True', help='Use sparse reward or not')
-    parser.add_argument('--stagnation', type=int, default=50, help='Number of generations for stagnation before reset')
+    parser.add_argument('--stagnation', type=int, default=30, help='Number of generations for stagnation before reset')
     args = parser.parse_args()
     return args
     
@@ -641,6 +667,7 @@ if __name__ == '__main__':
     args = parser()
     global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS
     stagnation = args.stagnation
+
     SPARSE_REWARD = str2bool(args.sparse_reward)
     num_sensors = args.num_sensors
     endless = str2bool(args.endless)
@@ -672,6 +699,7 @@ if __name__ == '__main__':
     # config_filename = 'config-simple'
     default_param = True
     if default_param:
+        # config_filename = 'config-default'
         config_filename = 'config-default'
     else:
         config_filename = 'config-simple'
@@ -687,7 +715,16 @@ if __name__ == '__main__':
 
     input_size = num_sensors * (1 + int(pheromone_receptor))
     hidden_size = math.ceil(input_size *3/4)
-    output_size = 4 if pheromone_receptor else 3
+
+    output_size = 2
+    if movement_type == "holonomic":
+        output_size +=1
+
+    elif movement_type == "1d":
+        output_size -=1
+
+    if pheromone_receptor:
+        output_size +=1
     # output_size = 4
     cfg['DefaultGenome']['num_inputs'] = str(input_size)
     cfg['DefaultGenome']['num_hidden'] = str(hidden_size)
@@ -701,17 +738,17 @@ if __name__ == '__main__':
 
 
     if not default_param:
-        cfg['DefaultGenome']['initial_connection'] = 'full_nodirect'
+        cfg['DefaultGenome']['initial_connection'] = 'full'
 
         # cfg['NEAT']['fitness_threshold'] = '1'
         
     cfg['NEAT']['fitness_criterion'] = args.fitness_criterion
 
     if SPARSE_REWARD:
-        # cfg['NEAT']['fitness_threshold'] = '1111110'
-        cfg['NEAT']['fitness_threshold'] = '60'
+        cfg['NEAT']['fitness_threshold'] = '1000000'
+        # cfg['NEAT']['fitness_threshold'] = '5'
     else:
-        cfg['NEAT']['fitness_threshold'] = '700'
+        cfg['NEAT']['fitness_threshold'] = '1000000'
 
     cfg['DefaultStagnation']['max_stagnation'] = str(stagnation)
 

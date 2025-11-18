@@ -16,7 +16,7 @@ network_type = 'recursive'  # Default value
 
 # Load config and genome.
 config_path = 'configs/config-default'
-genome_file = 'best_networks/aayush_baby_3.pickle'
+genome_file = 'best_networks/testing_genome.pkl'
 
 cfg = configparser.ConfigParser()
 cfg.read(config_path)
