@@ -1,7 +1,7 @@
 """Implements the core evolution algorithm."""
 from __future__ import print_function
 
-
+import inspect
 import os
 import pickle
 from neat.reporting import ReporterSet
@@ -91,7 +91,14 @@ class Population(object):
             self.reporters.start_generation(self.generation)
 
             # Evaluate all genomes using the user-provided function.
-            fitness_function(list(iteritems(self.population)), self.config, gen_num=self.generation)
+            #check how many arguments fitness_function takes
+            num_args = len(inspect.signature(fitness_function).parameters)
+            if num_args == 2:
+                fitness_function(list(iteritems(self.population)), self.config)
+            elif num_args == 3:
+                fitness_function(list(iteritems(self.population)), self.config, gen_num=self.generation)
+            else:
+                raise RuntimeError("Unexpected number of arguments for fitness_function")
 
             # Gather and report statistics.
             best = None
