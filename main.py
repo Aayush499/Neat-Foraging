@@ -29,7 +29,7 @@ WIDTH, HEIGHT = 1000, 1000
 #create a function to generate a string prefix based on the parameters
 def generate_prefix():
     global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, food_calibration, fitness_criterion, stagnation
-    return f"O{obstacles}-F{particles}-{movement_type}-G{generations}-N{network_type}-S{sub}-R{ricochet}-OT{obstacle_type}-SE{seeded}-OS{o_switch}-D{decay_factor}-P{pheromone_receptor}-CT{collision_threshold}-TC{time_constant}-TBonus{time_bonus_multiplier}-T{teleport}-NS{num_sensors}-FC{food_calibration}-F{fitness_criterion}-St{stagnation}"
+    return f"F{particles}-G{generations}-N{network_type}-OS{o_switch}-D{decay_factor}-PR_{pheromone_receptor}-CT_{collision_threshold}-Time_{time_constant}-F_{fitness_criterion}-{sub}"
 
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
@@ -294,7 +294,7 @@ class ForageTask:
         
         
         if test:
-            O4 = 1
+            O4 = -1
         else:
             O4 = -1
 
@@ -563,7 +563,7 @@ def test_best_network(config):
     global obstacles, particles, generations, movement_type, network_type, sub, ricochet, best_file
     prefix_string = generate_prefix()
     frame_dir = f'video_dir/{prefix_string}_frames'
-    postfix = '.pkl'
+    postfix = '.pickle'
     # os.makedirs(frame_dir, exist_ok=True)
     #make directory if it doesn't exist, if it exists, delete all files in it
     if not os.path.exists(frame_dir):
@@ -573,7 +573,7 @@ def test_best_network(config):
         for f in files:
             os.remove(f)
     
-    choose_current = True
+    choose_current = False
     best_dir = "best_networks" 
     #if choose_current is true, use current working directory
     if choose_current:
@@ -620,7 +620,7 @@ def parser():
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
     parser.add_argument("--particles", type=int, default=3, help="Number of food particles")
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
-    parser.add_argument("--generations", type=int, default=500, help="Number of generations")
+    parser.add_argument("--generations", type=int, default=900, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
                         )
@@ -634,16 +634,16 @@ def parser():
     parser.add_argument("--seeded", type=str, default="False", help="Use seeded random or not") 
     parser.add_argument("--orientation_switching", type=str, default="true", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
-    parser.add_argument("--decay_factor", type=float, default=0.97, help="Decay factor for pheromone")
+    parser.add_argument("--decay_factor", type=float, default=0.90, help="Decay factor for pheromone")
     parser.add_argument("--pheromone_receptor", type=str, default="False", help="Use pheromone receptor or not")
     parser.add_argument("--collision_threshold", type=float, default=10, help="Collision threshold for agent")
-    parser.add_argument("--time_constant", type=float, default=450.0, help="Time constant for optimal time")
+    parser.add_argument("--time_constant", type=float, default=250.0, help="Time constant for optimal time")
     parser.add_argument("--time_bonus_multiplier", type=float, default=2.0, help="Time bonus multiplier for fitness calculation")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
     parser.add_argument('--fitness_criterion', type=str, default='max', help='Fitness criterion to use (mean, max, etc.)')
-    parser.add_argument('--endless', type=str, default='False', help='Run in endless mode or not')
+    parser.add_argument('--endless', type=str, default='True', help='Run in endless mode or not')
     parser.add_argument('--sparse_reward', type=str, default='True', help='Use sparse reward or not')
     parser.add_argument('--stagnation', type=int, default=30, help='Number of generations for stagnation before reset')
     args = parser.parse_args()
@@ -748,7 +748,7 @@ if __name__ == '__main__':
         cfg['NEAT']['fitness_threshold'] = '1000000'
         # cfg['NEAT']['fitness_threshold'] = '5'
     else:
-        cfg['NEAT']['fitness_threshold'] = '1000000'
+        cfg['NEAT']['fitness_threshold'] = '8000000'
 
     cfg['DefaultStagnation']['max_stagnation'] = str(stagnation)
 

@@ -101,7 +101,7 @@ class Population(object):
             self.reporters.post_evaluate(self.config, self.population, self.species, best)
 
             if best_genomes_dir is not None:
-                pickle_filename = os.path.join(best_genomes_dir, f"best_genome_gen_{self.generation}.pkl")
+                pickle_filename = os.path.join(best_genomes_dir, f"best_genome_gen_{self.generation}.pickle")
                 with open(pickle_filename, "wb") as f:
                     pickle.dump(best, f)
         

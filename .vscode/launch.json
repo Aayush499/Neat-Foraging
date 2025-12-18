@@ -23,7 +23,7 @@
             // checkpoint-OFalse-F3-holonomic-G700-Nrecursive-Sdefault_params_dense_test_1-RFalse-OTline-SEFalse-OSTrue-D0.97-PFalse-CT7-TC600.0-TBonus4.0-TFalse-NS8-FCTrue-Fmax
             // "args" : ["--sparse_reward", "False", "--sub", "default_params_dense_test_1", "--generations", "480",
             // --test true --best aayush_baby_3
-            //   "args" : ["--best","testy", "--test","true"]
+              "args" : ["--use_checkpoint","a"]
         }
     ]
 }

@@ -605,7 +605,7 @@ class Game:
 
 
     def place_pheromone(self):
-        self.pheromones.append(Pheromone(self.agent.x, self.agent.y, 1.0))
+        self.pheromones.append(Pheromone(self.agent.x, self.agent.y, .01))
 
 
 
