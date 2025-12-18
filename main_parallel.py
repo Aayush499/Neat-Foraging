@@ -20,7 +20,7 @@ import multiprocessing
 from neat.parallel import ParallelEvaluator
 SIMPLE = False
 PARALLEL = True
-
+n_workers = int(os.environ.get("SLURM_CPUS_PER_TASK", "4"))
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
 # chosen_arrangement = [True] *18
 # chosen_arrangement[6] = True
@@ -461,7 +461,7 @@ def run_neat(config):
     os.makedirs(best_genomes_dir, exist_ok=True)
     #get absoulute path
     best_genomes_dir = os.path.abspath(best_genomes_dir)
-    pe = neat.ParallelEvaluator(multiprocessing.cpu_count(), eval_genome)
+    pe = neat.ParallelEvaluator(n_workers, eval_genome)
     if endless:
         if PARALLEL:
             winner = p.run(pe.evaluate, None, best_genomes_dir=best_genomes_dir)
