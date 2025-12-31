@@ -157,7 +157,7 @@ def visualize_genomes_in_dir(genome_dir, config, out_img_format="svg"):
     # Make output directory
     out_img_dir = os.path.join(genome_dir, "visualizations")
     os.makedirs(out_img_dir, exist_ok=True)
-    genome_files = sorted(glob.glob(os.path.join(genome_dir, "best_genome_gen_*.pkl")))
+    genome_files = sorted(glob.glob(os.path.join(genome_dir, "best_genome_gen_*.pickle")))
     for genome_file in genome_files:
         with open(genome_file, "rb") as f:
             genome = pickle.load(f)
@@ -190,11 +190,14 @@ if __name__ == "__main__":
     out_img_format = args.out_img_format
     whole = args.whole
     genome_file = args.genome_file
+    concatenate_path = os.path.join(os.getcwd(), genome_dir)
+    genome_dir = concatenate_path
+    concatenate_path = os.path.join(genome_dir, genome_file)
     if whole:
         visualize_genomes_in_dir(genome_dir, config, out_img_format=out_img_format)
     else:
         #visualize a specific genome file in the current directory (don't save image)
-        with open(genome_file, "rb") as f:
+        with open(concatenate_path, "rb") as f:
             genome = pickle.load(f)
         xml_str = get_xml(genome, config)
         nodes, edges = parse_xml_str(xml_str)

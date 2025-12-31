@@ -16,7 +16,7 @@ network_type = 'recursive'  # Default value
 
 # Load config and genome.
 config_path = 'configs/config-default'
-genome_file = 'best_networks/testing_genome.pkl'
+genome_file = 'best_networks/best-F3-G700-Nrecursive-OSTrue-D0.9-PR_False-CT_5-Time_300-Reward_ExtraSparse-distance_constrined_test_1.pickle'
 
 cfg = configparser.ConfigParser()
 cfg.read(config_path)

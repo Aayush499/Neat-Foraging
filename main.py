@@ -29,7 +29,17 @@ WIDTH, HEIGHT = 1000, 1000
 #create a function to generate a string prefix based on the parameters
 def generate_prefix():
     global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, food_calibration, fitness_criterion, stagnation
-    return f"F{particles}-G{generations}-N{network_type}-OS{o_switch}-D{decay_factor}-PR_{pheromone_receptor}-CT_{collision_threshold}-Time_{time_constant}-F_{fitness_criterion}-{sub}"
+    if SPARSE_REWARD:
+        rew = "Sparse"
+    else:
+        rew = "Dense"
+    if extra_sparse:
+        rew = "ExtraSparse"
+
+    s= f"F{particles}-G{generations}-N{network_type}-OS{o_switch}-D{decay_factor}-PR_{pheromone_receptor}-CT_{collision_threshold}-Time_{time_constant}-Reward_{rew}-{sub}"
+    
+    return s
+
 
 class ForageTask:
     def __init__(self, window, width, height, arrangement_idx = 0):
@@ -203,7 +213,7 @@ class ForageTask:
 
 
 
-    def train_ai(self, genome, config, draw=False, gen_num=0, genome_idx=0):
+    def train_ai(self, genome, config, draw=False, gen_num=0, genome_idx=0, run_num=0):
         """
         Train the AI by passing  NEAT neural networks and the NEAt config object.
    
@@ -211,7 +221,7 @@ class ForageTask:
          
         run = True
         start_time = time.time()
-        draw = False
+        draw = True
         # net = neat.nn.FeedForwardNetwork.create(genome, config)
         if network_type == 'ff':
             net = neat.nn.FeedForwardNetwork.create(genome, config)
@@ -249,12 +259,17 @@ class ForageTask:
                 gen_text = font.render(f"Gen: {gen_num}, Genome: {genome_idx}", True, (255, 255, 255))
                 self.game.window.blit(gen_text, (10, 50))
 
+                #display run num
+                run_text = font.render(f"Run: {run_num}", True, (255, 255, 255))
+                self.game.window.blit(run_text, (10, 90))
+
                 pygame.display.update()
 
             
 
+            total_distance = self.game.total_distance_travelled
             # duration = time.time() - start_time
-            if self.game.optimalTime <= clock or game_info.food_collected >= game_info.total_food :
+            if self.game.optimalTime <= clock or game_info.food_collected >= game_info.total_food :#or total_distance > self.game.optimal_distance :
                 self.calculate_fitness(game_info)
                 break
         
@@ -327,6 +342,9 @@ class ForageTask:
         # else:
         #     self.genome.fitness += game_info.score
         self.genome.fitness += game_info.score
+        if extra_sparse:
+            if game_info.food_collected == game_info.total_food:
+                self.genome.fitness += 1
 
 
 
@@ -351,7 +369,7 @@ def eval_genomes(genomes, config, gen_num=0):
 
             forage = ForageTask(win, width, height, arrangement_idx=run)
 
-            force_quit = forage.train_ai(genome, config, display, gen_num=gen_num, genome_idx=i)
+            force_quit = forage.train_ai(genome, config, display, gen_num=gen_num, genome_idx=i, run_num=run)
             if genome.fitness >=0  :
                 display = True
                 
@@ -604,6 +622,7 @@ def test_best_network(config):
         width, height = WIDTH, HEIGHT
         win = pygame.display.set_mode((width, height))
         pygame.display.set_caption("Forage")
+        print("seeded: ", seeded)
         foragetask = ForageTask(win, width, height, arrangement_idx=i)
 
         # Pass the global_frame **by reference** & get back updated value
@@ -618,11 +637,11 @@ def test_best_network(config):
 def parser():
     import argparse
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
-    parser.add_argument("--particles", type=int, default=3, help="Number of food particles")
+    parser.add_argument("--particles", type=int, default=1, help="Number of food particles")
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
-    parser.add_argument("--generations", type=int, default=900, help="Number of generations")
+    parser.add_argument("--generations", type=int, default=700, help="Number of generations")
     # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
-    parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
+    parser.add_argument("--movement_type", type=str, default="tank", help="Type of agent movement"
                         )
     parser.add_argument("--network", type=str, default="recursive", help="Type of neural network")
     parser.add_argument("--test", type=str, default="False", help="Test the best network after training")
@@ -631,23 +650,30 @@ def parser():
     parser.add_argument("--ricochet", type=str, default="False", help="Ricochet off walls or not")
     parser.add_argument("--best", type=str, default="", help="Best network file to test")
     parser.add_argument("--obstacle_type", type=str, default="line", help="Type of obstacle arrangement")
-    parser.add_argument("--seeded", type=str, default="False", help="Use seeded random or not") 
+    parser.add_argument("--seeded", type=str, default="True", help="Use seeded random or not") 
     parser.add_argument("--orientation_switching", type=str, default="true", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
     parser.add_argument("--decay_factor", type=float, default=0.90, help="Decay factor for pheromone")
     parser.add_argument("--pheromone_receptor", type=str, default="False", help="Use pheromone receptor or not")
-    parser.add_argument("--collision_threshold", type=float, default=10, help="Collision threshold for agent")
-    parser.add_argument("--time_constant", type=float, default=250.0, help="Time constant for optimal time")
+    parser.add_argument("--collision_threshold", type=float, default=5, help="Collision threshold for agent")
+    #calculating optimal time for 1 food particle
+    # optimal time  = sensor_length/agent max speed
+    # = 50/(sqrt(2)*velocity) *1.5 (safety factor)
+    # approx 36
+    
+    parser.add_argument("--time_constant", type=float, default=300, help="Time constant for optimal time")
     parser.add_argument("--time_bonus_multiplier", type=float, default=2.0, help="Time bonus multiplier for fitness calculation")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
-    parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
+    parser.add_argument('--food_calibration', type=str, default='False', help='calibrate distance of food based on collision threshold')
     parser.add_argument('--fitness_criterion', type=str, default='max', help='Fitness criterion to use (mean, max, etc.)')
-    parser.add_argument('--endless', type=str, default='True', help='Run in endless mode or not')
-    parser.add_argument('--sparse_reward', type=str, default='True', help='Use sparse reward or not')
+    parser.add_argument('--endless', type=str, default='False', help='Run in endless mode or not')
+    parser.add_argument('--sparse_reward', type=str, default='False', help='Use sparse reward or not')
     parser.add_argument('--stagnation', type=int, default=30, help='Number of generations for stagnation before reset')
+    parser.add_argument('--extra_sparse', type=str, default='False', help='Use extra sparse reward or not')
     args = parser.parse_args()
     return args
+    
     
 
 def str2bool(v):
@@ -665,9 +691,9 @@ if __name__ == '__main__':
     
     # config_path = os.path.join(local_dir, 'config-replication-plateau')
     args = parser()
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS, extra_sparse
     stagnation = args.stagnation
-
+    extra_sparse = str2bool(args.extra_sparse)
     SPARSE_REWARD = str2bool(args.sparse_reward)
     num_sensors = args.num_sensors
     endless = str2bool(args.endless)

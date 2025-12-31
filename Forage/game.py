@@ -35,7 +35,7 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic"):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic",):
          
       
         
@@ -89,8 +89,8 @@ class Game:
             x = prev_node[0] + dist * math.cos(angle)
             y = prev_node[1] + dist * math.sin(angle)
             food_pos.append((x, y))
-            base_angle = math.atan2(y - prev_node[1], x - prev_node[0])
-            angle_variation = random.uniform(-math.pi/4, math.pi/4) if o_switch else (40/180)*math.pi
+            
+            angle_variation = random.uniform(-math.pi/3, math.pi/3) if o_switch else (40/180)*math.pi
             if not radial_arrangement:
                 prev_node = (x, y)
             
@@ -112,6 +112,9 @@ class Game:
         # self.time_constant = (self.agent.sensor_length/self.agent.vel)*3 + 20
         # self.optimalTime = self.time_constant 
         self.optimalTime = self.time_constant 
+        #calculate optimal distance to collect one food particle and return to nest
+        self.distance_constant = self.agent.sensor_length*2 * 2.5 # buffer of 1.6
+        self.optimal_distance =  self.distance_constant# approx distance for one food particle collection and return
         
         
         self.score = 0
@@ -186,6 +189,8 @@ class Game:
         self.clock =0
         self.pulse_interval = 1  # frames till food removal
 
+        self.total_distance_travelled = 0.0
+
          
         
 
@@ -201,6 +206,8 @@ class Game:
         
         self.window.blit(direction_text, (self.window_width //
                                              4 - direction_text.get_width()//2, 60))
+        
+
         
         #draw time remaining
         # time_remaining = max(0, int(self.optimalTime - (self.searching_time + self.carry_time)))
@@ -266,6 +273,7 @@ class Game:
                 self.searching_time = 0
                 # self.optimalTime += self.time_constant*2
                 self.optimalTime += self.time_constant*self.time_bonus_multiplier
+                self.optimal_distance += self.distance_constant*2
         
         
             
@@ -480,12 +488,37 @@ class Game:
             X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) + self.agent.vel * O2* math.cos(self.agent.theta + math.pi/2)
             Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta) + self.agent.vel * O2* math.sin(self.agent.theta + math.pi/2)
         elif self.movement_type == "tank":
+
+            on_status  = 0 if O1 > 0 else 1
             X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) 
             Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta)
         elif self.movement_type == "1d":
             X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) 
             Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta)
         distance_to_travel = ((X - old_X) ** 2 + (Y - old_Y) ** 2) ** 0.5
+        self.total_distance_travelled += distance_to_travel
+
+        #check if agent's path crosses the coordinates of any food particles
+        #if it does, move agent to that food particle directly, call _handle_collision, and then move to the final position
+        #if movement is greater than 0
+        eps=1e-9
+        if distance_to_travel > eps:
+            
+            for food in self.food_list:
+                cross = (food.x - old_X) * (Y - old_Y) - (food.y - old_Y) * (X - old_X)
+                if abs(cross) > eps:
+                    continue
+                dot = (food.x - old_X) * (X - old_X) + (food.y - old_Y) * (Y - old_Y)
+                if dot < -eps:
+                    continue
+                squared_length = (X - old_X) ** 2 + (Y - old_Y) ** 2
+                if dot - squared_length > eps:
+                    continue
+                #move agent to food position
+                self.agent.move(food.x, food.y)
+                self._handle_collision()
+            
+
 
         if X < 0 or X > self.window_width or Y < 0 or Y > self.window_height:
             return False
@@ -600,6 +633,13 @@ class Game:
                 if not non_zero_flag and O1 != 0:
                     self.score += self.persistent_movement_reward
                     self.current_direction = "Exploring"
+
+        #check if the current path the agent takes intersects with any food particles
+
+        
+
+        
+
 
         return True
 

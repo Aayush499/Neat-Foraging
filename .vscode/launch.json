@@ -23,7 +23,11 @@
             // checkpoint-OFalse-F3-holonomic-G700-Nrecursive-Sdefault_params_dense_test_1-RFalse-OTline-SEFalse-OSTrue-D0.97-PFalse-CT7-TC600.0-TBonus4.0-TFalse-NS8-FCTrue-Fmax
             // "args" : ["--sparse_reward", "False", "--sub", "default_params_dense_test_1", "--generations", "480",
             // --test true --best aayush_baby_3
-              "args" : ["--use_checkpoint","a"]
+            //   "args" : ["--sub", "distance_constrined_test_2", "--test", "true"]
+            "args" : ["--best", "success2", "--test", "true"]
+            //   "args" : ["--sub", "distance_constrined_test_2"]
+            // "args": ["--genome_dir", "checkpoints/checkpoint-F3-G700-Nrecursive-OSTrue-D0.9-PR_False-CT_5-Time_300-Reward_ExtraSparse-distance_constrined_test_1/best_genomes_by_generation/", "--whole", "true"]
+            // "args": ["--genome_dir", "best_networks", "--genome_file" , "success2.pickle"]
         }
     ]
 }
