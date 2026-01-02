@@ -192,10 +192,11 @@ if __name__ == "__main__":
     genome_file = args.genome_file
     concatenate_path = os.path.join(os.getcwd(), genome_dir)
     genome_dir = concatenate_path
-    concatenate_path = os.path.join(genome_dir, genome_file)
+    
     if whole:
         visualize_genomes_in_dir(genome_dir, config, out_img_format=out_img_format)
     else:
+        concatenate_path = os.path.join(genome_dir, genome_file)
         #visualize a specific genome file in the current directory (don't save image)
         with open(concatenate_path, "rb") as f:
             genome = pickle.load(f)

@@ -35,7 +35,7 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic",):
+    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic", carrying_food_receptor=True, nest_receptor=True):
          
       
         
@@ -45,7 +45,7 @@ class Game:
         self.window_height = window_height
 
         self.agent = Agent(
-            self.window_height // 2 , self.window_width // 2, pheromone_receptor=pheromone_receptor, num_sensors=num_sensors)
+            self.window_height // 2 , self.window_width // 2, pheromone_receptor=pheromone_receptor, num_sensors=num_sensors, carrying_food_receptor=carrying_food_receptor, nest_receptor=nest_receptor)
         self.total_food = particles
         # self.total_food = 2
         food_pos = []
@@ -113,7 +113,7 @@ class Game:
         # self.optimalTime = self.time_constant 
         self.optimalTime = self.time_constant 
         #calculate optimal distance to collect one food particle and return to nest
-        self.distance_constant = self.agent.sensor_length*2 * 2.5 # buffer of 1.6
+        self.distance_constant = self.agent.sensor_length*2 * 1.6 # buffer of 1.6
         self.optimal_distance =  self.distance_constant# approx distance for one food particle collection and return
         
         
@@ -177,8 +177,8 @@ class Game:
 
         self.milestone  =1
 
-        self.food_seek_reward = .01
-        self.nest_seek_reward = .02
+        self.food_seek_reward = 1
+        self.nest_seek_reward = 1
         self.general_movement_reward_after_food_collection = .01
         self.persistent_movement_reward = 1
 
@@ -191,7 +191,31 @@ class Game:
 
         self.total_distance_travelled = 0.0
 
+        self.prev_pos = (self.agent.x, self.agent.y)
+
+        self.path_milestones = []
+        for idx, food in enumerate(self.food_list):
+            self.path_milestones.append(('food', idx))
+            self.path_milestones.append(('nest', None))
+
+        self.current_milestone_idx = 0
+        self.path_reward = 20.0      # tune as needed
+        self.path_radius = self.collision_threshold * 1.5
+
          
+    def _current_path_target(self):
+        if self.current_milestone_idx >= len(self.path_milestones):
+            return None  # path complete
+
+        kind, idx = self.path_milestones[self.current_milestone_idx]
+        if kind == 'nest':
+            return (self.nest.x, self.nest.y)
+        else:  # 'food'
+            # food may be removed; if gone, just skip this milestone
+            if idx >= len(self.food_list):
+                return None
+            f = self.food_list[idx]
+            return (f.x, f.y)
         
 
     def _draw_score(self):
@@ -206,6 +230,8 @@ class Game:
         
         self.window.blit(direction_text, (self.window_width //
                                              4 - direction_text.get_width()//2, 60))
+        
+    
         
 
         
@@ -237,7 +263,8 @@ class Game:
                         if not self.sparse :
                             
                             # self.score += 100 * (self.discount_factor ** self.searching_time) + self.food_collected*30*(self.discount_factor ** self.searching_time)
-                            self.score += 10**(self.milestone) * (self.discount_factor ** self.searching_time) 
+                            # self.score += 10**(self.milestone) * (self.discount_factor ** self.searching_time) 
+                            self.score += 10 * (self.discount_factor ** self.searching_time) 
                         else:
                             self.score += 10**(self.milestone)
                         if milestone:
@@ -259,7 +286,8 @@ class Game:
             if dist <= collision_threshold :
                 if not self.sparse:
                     # self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
-                    self.score += 10**(self.milestone) * (self.discount_factor ** self.carry_time)
+                    # self.score += 10**(self.milestone) * (self.discount_factor ** self.carry_time)
+                    self.score += 50 * (self.discount_factor ** self.carry_time)
                 else:
                     self.score +=  10**(self.milestone)
                 if milestone:
@@ -332,6 +360,22 @@ class Game:
                             agent.sensors[i][receptor_cnt] = max(1 - (dist / (agent.sensor_length + 0.1)), agent.sensors[i][receptor_cnt])
                             break
                 receptor_cnt += 1
+            
+            if self.agent.nest_receptor:
+                dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
+                if dist <= agent.sensor_length:
+                    angle_to_nest = math.atan2(nest.y - agent.y, nest.x - agent.x)
+                    sensor_angle = 2 * math.pi * i / agent.sensor_count + agent.theta
+                    angle_diff = abs((angle_to_nest - sensor_angle + math.pi) % (2 * math.pi) - math.pi)
+                    if angle_diff < (math.pi / agent.sensor_count):
+                        agent.sensors[i][receptor_cnt] = 1 - (dist / (agent.sensor_length + 0.1))
+                        #normalize to -1, 1
+                        agent.sensors[i][receptor_cnt] = agent.sensors[i][receptor_cnt] * 2 - 1
+                    else:
+                        agent.sensors[i][receptor_cnt] = 0
+                else:
+                    agent.sensors[i][receptor_cnt] = 0
+                receptor_cnt += 1
         
                         
         # if not self.agent.food_receptor:
@@ -351,6 +395,8 @@ class Game:
         #             #normalizing to -1, 1
         #             agent.sensors[i+1][0] = agent.sensors[i+1][0] * 2 - 1
         #             agent.sensors[i+1][1] = angle_diff / math.pi  # normalize to [0, 1]
+
+        
 
                     
     def update_pheromones(self):
@@ -491,7 +537,7 @@ class Game:
 
             on_status  = 0 if O1 > 0 else 1
             X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) 
-            Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta)
+            Y = self.agent.y - self.agent.vel * O1* math.sin(self.agent.theta)
         elif self.movement_type == "1d":
             X = self.agent.x + self.agent.vel * O1* math.cos(self.agent.theta) 
             Y = self.agent.y + self.agent.vel * O1* math.sin(self.agent.theta)
@@ -600,25 +646,62 @@ class Game:
 
         self.agent.move(new_position[0], new_position[1])
 
+        # target = self._current_path_target()
+        # if target is not None:
+        #     tx, ty = target
+        #     dx = self.agent.x - tx
+        #     dy = self.agent.y - ty
+        #     dist = (dx*dx + dy*dy) ** 0.5
+
+        #     # Reward when agent comes close enough to the current milestone, in order
+        #     if dist <= self.path_radius:
+        #         self.score += self.path_reward
+        #         self.current_milestone_idx += 1
+
 
         if self.simple_guidance:
             #give a small score if agent is moving towards food when self.carrying_food is False
             if self.movement_type != "1d":
                 if not self.agent.carrying_food:
-                    dist1 = min([((self.agent.x - food.x) ** 2 + (self.agent.y - food.y) ** 2) ** 0.5 for food in self.food_list])
-                    dist2 = min([((old_X - food.x) ** 2 + (old_Y - food.y) ** 2) ** 0.5 for food in self.food_list])
-                    if dist1 < dist2:
-                        self.score += self.food_seek_reward 
-                        self.current_direction = "Towards Food"
-                else:
-                    dist1 = ((self.agent.x - self.nest.x) ** 2 + (self.agent.y - self.nest.y) ** 2) ** 0.5
-                    dist2 = ((old_X - self.nest.x) ** 2 + (old_Y - self.nest.y) ** 2) ** 0.5
-                    if dist1 < dist2:
-                        self.score += self.nest_seek_reward
-                        self.current_direction = "Towards Nest"
 
-                    if dist1!= dist2:
-                        self.score += self.general_movement_reward_after_food_collection
+
+                    if len(self.food_list) >0:
+
+                        if self.searching_time%10 ==0:
+                            dist1 = min([((self.agent.x - food.x) ** 2 + (self.agent.y - food.y) ** 2) ** 0.5 for food in self.food_list])
+                            dist2 = min([((self.prev_pos[0] - food.x) ** 2 + (self.prev_pos[1] - food.y) ** 2) ** 0.5 for food in self.food_list])
+                            if dist1 < dist2:
+                                self.score += self.food_seek_reward * (abs(dist2 - dist1))
+                                self.current_direction = "Towards Food"
+                            # #punish if it instead moves away from food
+                            # elif dist1 > dist2:
+                            #     self.score -= self.food_seek_reward * (abs(dist2 - dist1))/2
+
+                            # else:
+                            #     #punish if it stays in the same place
+                            #     self.score -= self.food_seek_reward * 5
+                            #update previous position if current position was closer to food
+                                self.prev_pos = (self.agent.x, self.agent.y)
+                            
+
+                else:
+                    if self.carry_time %10 ==0:
+                        dist1 = ((self.agent.x - self.nest.x) ** 2 + (self.agent.y - self.nest.y) ** 2) ** 0.5
+                        dist2 = ((self.prev_pos[0] - self.nest.x) ** 2 + (self.prev_pos[1] - self.nest.y) ** 2) ** 0.5
+                        if dist1 < dist2:
+                            self.score += self.nest_seek_reward * (abs(dist2 - dist1))
+                            self.current_direction = "Towards Nest"
+                        #punish if it instead moves away from nest
+                        # elif dist1 > dist2:
+                        #     self.score -= self.nest_seek_reward * (abs(dist2 - dist1))/2
+                        # else:
+                        #     #punish if it stays in the same place
+                        #     self.score -= self.nest_seek_reward * 5
+
+                    # if dist1!= dist2:
+                    #     self.score += self.general_movement_reward_after_food_collection
+                        #update previous position
+                            self.prev_pos = (self.agent.x, self.agent.y)
             else:
                 non_zero_flag = False
                 #go through agent's input sensors for any non zero value

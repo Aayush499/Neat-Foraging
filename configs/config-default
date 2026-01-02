@@ -39,8 +39,8 @@ compatibility_weight_coefficient   = 0.6
 ; conn_delete_prob        = 0.05
 ; conn_add_prob           = 0.5
 ; conn_delete_prob        = 0.5
-conn_add_prob           = 0.9
-conn_delete_prob        = 0.2
+conn_add_prob           = 0.2
+conn_delete_prob        = 0.05
 
 # connection enable options
 ; enabled_default         = True
@@ -54,8 +54,8 @@ initial_connection      = partial_direct 0.5
 ; node_delete_prob        = 0.05
 ; node_add_prob           = 0.9
 ; node_delete_prob        = 0.2
-node_add_prob           = 0.9
-node_delete_prob        = 0.2
+node_add_prob           = 0.2
+node_delete_prob        = 0.03
 # network parameters
 num_hidden              = 4
 num_inputs             = 8
@@ -95,7 +95,7 @@ weight_max_value        = 30
 weight_min_value        = -30
 weight_init_mean        = 0.0
 weight_init_stdev       = 1.0
-weight_mutate_rate      = 0.8
+weight_mutate_rate      = 0.5
 weight_replace_rate     = 0.1
 weight_mutate_power     = 0.5
 enabled_default         = True
@@ -113,7 +113,7 @@ compatibility_threshold = 2.9
 
 
 [DefaultReproduction]
-elitism            = 0
+elitism            = 1
 ; elitism            = 1  
 ; survival_threshold = 0.2
 ; survival_threshold      = 1.0  
