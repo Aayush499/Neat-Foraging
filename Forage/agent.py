@@ -18,7 +18,7 @@ class Agent:
         self.carrying_food = False
         self.radius = 1
         # self.sensor_length = 99
-        self.sensor_length = 50
+        self.sensor_length = 16
         self.color = BLUE
        
         self.vel = 3

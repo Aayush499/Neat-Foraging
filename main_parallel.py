@@ -31,7 +31,7 @@ WIDTH, HEIGHT = 1000, 1000
 # SPARSE_REWARD = True
 #create a function to generate a string prefix based on the parameters
 def generate_prefix():
-    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, food_calibration, fitness_criterion, stagnation
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, obstacle_type, seeded, o_switch, decay_factor, pheromone_receptor, collision_threshold, time_constant, teleport, num_sensors, food_calibration, fitness_criterion, stagnation
     if SPARSE_REWARD:
         rew = "Sparse"
     else:
@@ -54,7 +54,7 @@ class ForageTask:
                 window = None  # In parallel mode, we won't use any window at all
         global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, time_bonus_multiplier=time_bonus_multiplier, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor)
+        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor)
         self.foods = self.game.food_list
         self.agent = self.game.agent
         self.pheromone = self.game.pheromones
@@ -274,7 +274,13 @@ class ForageTask:
             total_distance = self.game.total_distance_travelled
             # duration = time.time() - start_time
             if self.game.optimalTime <= clock or game_info.food_collected >= game_info.total_food  or (distance_constraint and total_distance > self.game.optimal_distance) :
+
                 self.calculate_fitness(game_info)
+                #check if the agent was carrying food before it ended
+                if self.agent.carrying_food and not extra_sparse:
+                    #reward it proportionally to how close it was to the nest
+                    dist_to_nest = math.sqrt((self.agent.x - self.nest.x)**2 + (self.agent.y - self.nest.y)**2)
+                    self.genome.fitness += 10**self.game.milestone*(0.99**( dist_to_nest ))  # assuming max distance is WIDTH/2
                 break
         
             
@@ -345,17 +351,20 @@ class ForageTask:
         #     # self.genome.fitness += game_info.food_collected 
         # else:
         #     self.genome.fitness += game_info.score
-        lambda_waste = 0.01
-        effective_trips = max(self.game.food_collected, 1)
-       
-        waste = max(0.0, self.game.total_distance_travelled - effective_trips * self.game.optimal_distance)
-        self.genome.fitness += game_info.score 
-        self.genome.fitness -= lambda_waste * waste
+        
         
 
         if extra_sparse:
             if game_info.food_collected == game_info.total_food:
                 self.genome.fitness += 1
+        else:
+
+            lambda_waste = 0.01
+            effective_trips = max(self.game.food_collected, 1)
+        
+            waste = max(0.0, self.game.total_distance_travelled - effective_trips * self.game.optimal_distance)
+            self.genome.fitness += game_info.score 
+            self.genome.fitness -= lambda_waste * waste
 
 
 
@@ -643,7 +652,7 @@ def test_best_network(config):
         for f in files:
             os.remove(f)
     
-    choose_current = False
+    choose_current = True
     best_dir = "best_networks" 
     #if choose_current is true, use current working directory
     if choose_current:
@@ -690,13 +699,10 @@ def parser():
     parser = argparse.ArgumentParser(description="Run NEAT Foraging Task")
     parser.add_argument("--particles", type=int, default=3, help="Number of food particles")
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
-    parser.add_argument("--generations", type=int, default=200, help="Number of generations")
-    # parser.add_argument("--config", type=str, default="config-replication-plateau", help="Config filename")
-    parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement"
-                        )
-    parser.add_argument("--network", type=str, default="ff", help="Type of neural network")
+    parser.add_argument("--generations", type=int, default=500, help="Number of generations")
+    parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement")                   
+    parser.add_argument("--network", type=str, default="recursive", help="Type of neural network")
     parser.add_argument("--test", type=str, default="False", help="Test the best network after training")
-    #add an argument for adding a sub number for multiple runs
     parser.add_argument("--sub", type=str, default="0", help="Sub title for multiple runs")
     parser.add_argument("--ricochet", type=str, default="False", help="Ricochet off walls or not")
     parser.add_argument("--best", type=str, default="", help="Best network file to test")
@@ -705,15 +711,9 @@ def parser():
     parser.add_argument("--orientation_switching", type=str, default="true", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
     parser.add_argument("--decay_factor", type=float, default=0.90, help="Decay factor for pheromone")
-    parser.add_argument("--pheromone_receptor", type=str, default="True", help="Use pheromone receptor or not")
-    parser.add_argument("--collision_threshold", type=float, default=10, help="Collision threshold for agent")
-    #calculating optimal time for 1 food particle
-    # optimal time  = sensor_length/agent max speed
-    # = 50/(sqrt(2)*velocity) *1.5 (safety factor)
-    # approx 36
-    
-    parser.add_argument("--time_constant", type=float, default=300, help="Time constant for optimal time")
-    parser.add_argument("--time_bonus_multiplier", type=float, default=2.0, help="Time bonus multiplier for fitness calculation")
+    parser.add_argument("--pheromone_receptor", type=str, default="false", help="Use pheromone receptor or not")
+    parser.add_argument("--collision_threshold", type=float, default=3, help="Collision threshold for agent") 
+    parser.add_argument("--time_constant", type=float, default=200, help="Time constant for optimal time")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='False', help='calibrate distance of food based on collision threshold')
@@ -721,10 +721,19 @@ def parser():
     parser.add_argument('--endless', type=str, default='False', help='Run in endless mode or not')
     parser.add_argument('--sparse_reward', type=str, default='true', help='Use sparse reward or not')
     parser.add_argument('--stagnation', type=int, default=30, help='Number of generations for stagnation before reset')
-    parser.add_argument('--extra_sparse', type=str, default='False', help='Use extra sparse reward or not')
-    parser.add_argument('--carrying_food_receptor', type=str, default='true', help='Use carrying food receptor or not')
+    parser.add_argument('--extra_sparse', type=str, default='true', help='Use extra sparse reward or not')
+    parser.add_argument('--carrying_food_receptor', type=str, default='false', help='Use carrying food receptor or not')
     parser.add_argument('--nest_receptor', type=str, default='false', help='Use nest receptor or not')
-    parser.add_argument('--distance_constraint', type=str, default='False', help='Use distance constraint or not')
+    parser.add_argument('--distance_constraint', type=str, default='false', help='Use distance constraint or not')
+    parser.add_argument('--parameter_print', action='store_true', default='false', help='Print parameters or not')
+    parser.add_argument('--connection_addition_rate', type=float, default=0.0, help='Connection addition rate for NEAT')
+    parser.add_argument('--connection_deletion_rate', type=float, default=0.00, help='Connection deletion rate for NEAT')   
+    parser.add_argument('--node_addition_rate', type=float, default=0.0, help='Node addition rate for NEAT')
+    parser.add_argument('--node_deletion_rate', type=float, default=0.00, help='Node deletion rate for NEAT')
+    parser.add_argument('--elitism', type=int, default=1, help='Number of elite genomes to carry over each generation')
+    parser.add_argument('--initial_connection', type=str, default='full_direct', help='Initial connection type for NEAT (full, partial, etc.)')
+
+
     args = parser.parse_args()
     return args
     
@@ -744,8 +753,13 @@ if __name__ == '__main__':
     
     # config_path = os.path.join(local_dir, 'config-replication-plateau')
     args = parser()
+    parameter_print = str2bool(args.parameter_print)
     manual_mode = False
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, time_bonus_multiplier, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS, distance_constraint
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS, distance_constraint
+    connection_addition_rate = args.connection_addition_rate
+    connection_deletion_rate = args.connection_deletion_rate
+    node_addition_rate = args.node_addition_rate
+    node_deletion_rate = args.node_deletion_rate
     stagnation = args.stagnation
     distance_constraint = str2bool(args.distance_constraint)
     extra_sparse = str2bool(args.extra_sparse)
@@ -773,11 +787,12 @@ if __name__ == '__main__':
     best_file = args.best
     collision_threshold = args.collision_threshold
     time_constant = args.time_constant
-    time_bonus_multiplier = args.time_bonus_multiplier
+    elitism = args.elitism
+    # time_bonus_multiplier = args.time_bonus_multiplier
     carrying_food_receptor = str2bool(args.carrying_food_receptor)
     nest_receptor = str2bool(args.nest_receptor)
     #NUM runs should be 1 if orientation switching is off, else 10
-    NUM_RUNS = 10 if o_switch else 1
+    NUM_RUNS = 50 if o_switch else 1
     
     # config_filename = 'config-simple'
     default_param = True
@@ -839,13 +854,19 @@ if __name__ == '__main__':
     cfg['NEAT']['fitness_criterion'] = args.fitness_criterion
 
     if SPARSE_REWARD:
-        cfg['NEAT']['fitness_threshold'] = '11111'
+        cfg['NEAT']['fitness_threshold'] = '1111110'
         if extra_sparse:
             cfg['NEAT']['fitness_threshold'] = '1'
     else:
         cfg['NEAT']['fitness_threshold'] = '130'
 
     cfg['DefaultStagnation']['max_stagnation'] = str(stagnation)
+    cfg['DefaultGenome']['conn_add_prob'] = str(connection_addition_rate)
+    cfg['DefaultGenome']['conn_delete_prob'] = str(connection_deletion_rate)
+    cfg['DefaultGenome']['node_add_prob'] = str(node_addition_rate)
+    cfg['DefaultGenome']['node_delete_prob'] = str(node_deletion_rate)
+    cfg['DefaultReproduction']['elitism'] = str(elitism)
+    cfg['DefaultGenome']['initial_connection'] = args.initial_connection
 
 
 
@@ -862,6 +883,7 @@ if __name__ == '__main__':
             neat.DefaultReproduction,
             neat.DefaultSpeciesSet,
             neat.DefaultStagnation,
+
             tmpfile.name
         )
 
@@ -924,7 +946,31 @@ if __name__ == '__main__':
         # 4) Run manual testing loop
         forage.manual_test(winner_net)
     else:
+        if parameter_print:
+            print("===== Parameters =====")
+            print(f"Particles: {particles}")
+            print(f"Generations: {generations}")
+            print(f"Movement Type: {movement_type}")
+            print(f"Network Type: {network_type}")
+            print(f"Seeded: {seeded}")
+            print(f"Orientation Switching: {o_switch}")
+            print(f"Pheromone Receptor: {pheromone_receptor}")
+            print(f"Carrying Food Receptor: {carrying_food_receptor}")
+            print(f"Nest Receptor: {nest_receptor}")
+            print(f"Collision Threshold: {collision_threshold}")
+            print(f"Time Constant: {time_constant}")
+            print(f"Distance Constraint: {distance_constraint}")
+            print(f"Sparse Reward: {SPARSE_REWARD}")
+            print(f"Extra Sparse: {extra_sparse}")
+            print(f"Fitness Criterion: {fitness_criterion}")
+            print(f"Stagnation: {stagnation}")
+            print(f"Connection Addition Rate: {connection_addition_rate}")
+            print(f"Connection Deletion Rate: {connection_deletion_rate}")
+            print(f"Node Addition Rate: {node_addition_rate}")
+            print(f"Node Deletion Rate: {node_deletion_rate}")
+            print(f"Elitism: {elitism}")
+            print("======================")
      
-        if not test_run:
-            run_neat(config)
-        test_best_network(config)
+            if not test_run:
+                run_neat(config)
+            test_best_network(config)

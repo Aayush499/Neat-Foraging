@@ -105,7 +105,7 @@ class Game:
 
         self.collision_threshold = collision_threshold
         self.time_constant = time_constant
-        self.time_bonus_multiplier = time_bonus_multiplier
+        # self.time_bonus_multiplier = time_bonus_multiplier
 
         # self.optimalTime = 250
         # self.TIME_BONUS =  2*self.agent.sensor_length/self.agent.vel + 2 + 20
@@ -113,8 +113,8 @@ class Game:
         # self.optimalTime = self.time_constant 
         self.optimalTime = self.time_constant 
         #calculate optimal distance to collect one food particle and return to nest
-        self.distance_constant = self.agent.sensor_length*2 * 1.6 # buffer of 1.6
-        self.optimal_distance =  self.distance_constant# approx distance for one food particle collection and return
+        self.distance_constant = self.agent.sensor_length* 2.5 # buffer of 1.6
+        self.optimal_distance =  2*self.distance_constant# approx distance for one food particle collection and return
         
         
         self.score = 0
@@ -300,8 +300,8 @@ class Game:
                 # self.pheromones = []
                 self.searching_time = 0
                 # self.optimalTime += self.time_constant*2
-                self.optimalTime += self.time_constant*self.time_bonus_multiplier
-                self.optimal_distance += self.distance_constant*2
+                self.optimalTime += self.time_constant*(self.food_collected+1)*(self.food_collected+2)
+                self.optimal_distance = self.distance_constant*(self.food_collected+1)*(self.food_collected+2)
         
         
             
