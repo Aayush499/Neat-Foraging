@@ -685,7 +685,7 @@ def parser():
     parser.add_argument("--decay_factor", type=float, default=0.99, help="Decay factor for pheromone")
     parser.add_argument("--pheromone_receptor", type=str, default="false", help="Use pheromone receptor or not")
     parser.add_argument("--collision_threshold", type=float, default=3, help="Collision threshold for agent") 
-    parser.add_argument("--time_constant", type=float, default=60, help="Time constant for optimal time")
+    parser.add_argument("--time_constant", type=float, default=20, help="Time constant for optimal time")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
@@ -767,7 +767,7 @@ if __name__ == '__main__':
     nest_receptor = str2bool(args.nest_receptor)
     weight_mutate_power = args.weight_mutate_power
     #NUM runs should be 1 if orientation switching is off, else 10
-    NUM_RUNS = 30 if o_switch else 1
+    NUM_RUNS = 10 if o_switch else 1
     
     # config_filename = 'config-simple'
     default_param = True
