@@ -35,7 +35,7 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, arrangement_idx=0, obstacles = False, particles = 5, ricochet = True, obstacle_type="line", seeded=False, o_switch=False, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic", carrying_food_receptor=True, nest_receptor=True):
+    def __init__(self, window, window_width, window_height, decay_factor, arrangement_idx, obstacles , particles , ricochet, obstacle_type, seeded, o_switch, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic", carrying_food_receptor=True, nest_receptor=True):
          
       
         
@@ -75,7 +75,7 @@ class Game:
         prev_node = (self.agent.x, self.agent.y)
         angle = random.uniform(0, 2 * math.pi) if o_switch else math.pi/2
         #let the dist of food after the first food be sensor lenght - collision threshold if calibrated food check is true
-        food_dist = self.agent.sensor_length - collision_threshold if food_calibration else self.agent.sensor_length
+        food_dist = self.agent.sensor_length - (collision_threshold+2) if food_calibration else self.agent.sensor_length
         first_chk = True
         food_placed = False
         dist = self.agent.sensor_length
@@ -90,7 +90,7 @@ class Game:
             y = prev_node[1] + dist * math.sin(angle)
             food_pos.append((x, y))
             
-            angle_variation = random.uniform(-math.pi/3, math.pi/3) if o_switch else (40/180)*math.pi
+            angle_variation = random.uniform(-math.pi/2, math.pi/2) if o_switch else (40/180)*math.pi
             if not radial_arrangement:
                 prev_node = (x, y)
             
@@ -124,7 +124,7 @@ class Game:
         self.window = window
         self.current_direction = ""
 
-        self.discount_factor = 0.99
+        self.discount_factor = discount_factor
         self.carry_time = 0
         self.searching_time = 0
         
@@ -168,10 +168,10 @@ class Game:
 
         self.simple_guidance = False
 
-        self.decay_factor = discount_factor
+        self.decay_factor = decay_factor
         self.decay_limit = 0.0001
         pheromone_lifespan = math.log(self.decay_limit)/math.log(self.decay_factor)
-        self.sum_limit = (1 - self.decay_factor**pheromone_lifespan)/(1 - self.decay_factor)
+        # self.sum_limit = (1 - self.decay_factor**pheromone_lifespan)/(1 - self.decay_factor)
 
         self.sparse = sparse
 

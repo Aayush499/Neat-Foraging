@@ -54,7 +54,7 @@ class ForageTask:
                 window = None  # In parallel mode, we won't use any window at all
         global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor)
+        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor, decay_factor=decay_factor, discount_factor=0.99)
         self.foods = self.game.food_list
         self.agent = self.game.agent
         self.pheromone = self.game.pheromones
@@ -362,7 +362,7 @@ class ForageTask:
             lambda_waste = 0.01
             effective_trips = max(self.game.food_collected, 1)
         
-            waste = max(0.0, self.game.total_distance_travelled - effective_trips * self.game.optimal_distance)
+            waste = max(0.0, self.game.total_distance_travelled - self.game.optimal_distance)
             self.genome.fitness += game_info.score 
             self.genome.fitness -= lambda_waste * waste
 
@@ -710,29 +710,30 @@ def parser():
     parser.add_argument("--seeded", type=str, default="True", help="Use seeded random or not") 
     parser.add_argument("--orientation_switching", type=str, default="true", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
-    parser.add_argument("--decay_factor", type=float, default=0.90, help="Decay factor for pheromone")
+    parser.add_argument("--decay_factor", type=float, default=0.99, help="Decay factor for pheromone")
     parser.add_argument("--pheromone_receptor", type=str, default="false", help="Use pheromone receptor or not")
     parser.add_argument("--collision_threshold", type=float, default=3, help="Collision threshold for agent") 
     parser.add_argument("--time_constant", type=float, default=200, help="Time constant for optimal time")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
-    parser.add_argument('--food_calibration', type=str, default='False', help='calibrate distance of food based on collision threshold')
+    parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
     parser.add_argument('--fitness_criterion', type=str, default='max', help='Fitness criterion to use (mean, max, etc.)')
     parser.add_argument('--endless', type=str, default='False', help='Run in endless mode or not')
-    parser.add_argument('--sparse_reward', type=str, default='true', help='Use sparse reward or not')
+    parser.add_argument('--sparse_reward', type=str, default='false', help='Use sparse reward or not')
     parser.add_argument('--stagnation', type=int, default=30, help='Number of generations for stagnation before reset')
-    parser.add_argument('--extra_sparse', type=str, default='true', help='Use extra sparse reward or not')
+    parser.add_argument('--extra_sparse', type=str, default='false', help='Use extra sparse reward or not')
     parser.add_argument('--carrying_food_receptor', type=str, default='false', help='Use carrying food receptor or not')
     parser.add_argument('--nest_receptor', type=str, default='false', help='Use nest receptor or not')
     parser.add_argument('--distance_constraint', type=str, default='false', help='Use distance constraint or not')
     parser.add_argument('--parameter_print', action='store_true', default='false', help='Print parameters or not')
-    parser.add_argument('--connection_addition_rate', type=float, default=0.0, help='Connection addition rate for NEAT')
-    parser.add_argument('--connection_deletion_rate', type=float, default=0.00, help='Connection deletion rate for NEAT')   
-    parser.add_argument('--node_addition_rate', type=float, default=0.0, help='Node addition rate for NEAT')
-    parser.add_argument('--node_deletion_rate', type=float, default=0.00, help='Node deletion rate for NEAT')
+    parser.add_argument('--connection_addition_rate', type=float, default=0.2, help='Connection addition rate for NEAT')
+    parser.add_argument('--connection_deletion_rate', type=float, default=0.05, help='Connection deletion rate for NEAT')   
+    parser.add_argument('--node_addition_rate', type=float, default=0.03, help='Node addition rate for NEAT')
+    parser.add_argument('--node_deletion_rate', type=float, default=0.01, help='Node deletion rate for NEAT')
     parser.add_argument('--elitism', type=int, default=1, help='Number of elite genomes to carry over each generation')
     parser.add_argument('--initial_connection', type=str, default='full_direct', help='Initial connection type for NEAT (full, partial, etc.)')
-
+    parser.add_argument('--weight_mutate_power', type=float, default=0.3, help='Weight mutation power for NEAT')
+    parser.add_argument('--discount_factor', type=float, default=0.99, help='Time bonus multiplier for fitness calculation')
 
     args = parser.parse_args()
     return args
@@ -755,7 +756,8 @@ if __name__ == '__main__':
     args = parser()
     parameter_print = str2bool(args.parameter_print)
     manual_mode = False
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS, distance_constraint
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS, distance_constraint, discount_factor
+    discount_factor = args.discount_factor
     connection_addition_rate = args.connection_addition_rate
     connection_deletion_rate = args.connection_deletion_rate
     node_addition_rate = args.node_addition_rate
@@ -791,8 +793,9 @@ if __name__ == '__main__':
     # time_bonus_multiplier = args.time_bonus_multiplier
     carrying_food_receptor = str2bool(args.carrying_food_receptor)
     nest_receptor = str2bool(args.nest_receptor)
+    weight_mutate_power = args.weight_mutate_power
     #NUM runs should be 1 if orientation switching is off, else 10
-    NUM_RUNS = 50 if o_switch else 1
+    NUM_RUNS = 30 if o_switch else 1
     
     # config_filename = 'config-simple'
     default_param = True
@@ -858,7 +861,7 @@ if __name__ == '__main__':
         if extra_sparse:
             cfg['NEAT']['fitness_threshold'] = '1'
     else:
-        cfg['NEAT']['fitness_threshold'] = '130'
+        cfg['NEAT']['fitness_threshold'] = '150'
 
     cfg['DefaultStagnation']['max_stagnation'] = str(stagnation)
     cfg['DefaultGenome']['conn_add_prob'] = str(connection_addition_rate)
@@ -867,6 +870,7 @@ if __name__ == '__main__':
     cfg['DefaultGenome']['node_delete_prob'] = str(node_deletion_rate)
     cfg['DefaultReproduction']['elitism'] = str(elitism)
     cfg['DefaultGenome']['initial_connection'] = args.initial_connection
+    cfg['DefaultGenome']['weight_mutate_power'] = str(weight_mutate_power)
 
 
 
@@ -968,9 +972,11 @@ if __name__ == '__main__':
             print(f"Connection Deletion Rate: {connection_deletion_rate}")
             print(f"Node Addition Rate: {node_addition_rate}")
             print(f"Node Deletion Rate: {node_deletion_rate}")
+            print(f"Weight Mutate Power: {weight_mutate_power}")
             print(f"Elitism: {elitism}")
+            print(f"Discount Factor: {discount_factor}")
             print("======================")
      
-            if not test_run:
-                run_neat(config)
-            test_best_network(config)
+        if not test_run:
+            run_neat(config)
+        test_best_network(config)

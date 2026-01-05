@@ -77,7 +77,7 @@ response_replace_rate   = 0.0
 response_mutate_rate    = 0.0
 response_mutate_power   = 0.0
 response_max_value      = 1.0
-response_min_value      = -1.0
+response_min_value      = 1.0
 
 # connection weight options
 ; weight_init_mean        = 0.0
