@@ -54,7 +54,7 @@ class ForageTask:
                 window = None  # In parallel mode, we won't use any window at all
         global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor, decay_factor=decay_factor, discount_factor=0.99)
+        self.game = Game(window, width, height, decay_factor, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor,  discount_factor=0.99)
         self.foods = self.game.food_list
         self.agent = self.game.agent
         self.pheromone = self.game.pheromones
@@ -277,11 +277,11 @@ class ForageTask:
 
                 self.calculate_fitness(game_info)
                 #check if the agent was carrying food before it ended
-                if self.agent.carrying_food and not extra_sparse:
-                    #reward it proportionally to how close it was to the nest
-                    dist_to_nest = math.sqrt((self.agent.x - self.nest.x)**2 + (self.agent.y - self.nest.y)**2)
-                    self.genome.fitness += 10**self.game.milestone*(0.99**( dist_to_nest ))  # assuming max distance is WIDTH/2
-                break
+                # if self.agent.carrying_food and not extra_sparse:
+                #     #reward it proportionally to how close it was to the nest
+                #     dist_to_nest = math.sqrt((self.agent.x - self.nest.x)**2 + (self.agent.y - self.nest.y)**2)
+                #     self.genome.fitness += 10**self.game.milestone*(0.99**( dist_to_nest ))  # assuming max distance is WIDTH/2
+                # break
         
             
 
@@ -713,7 +713,7 @@ def parser():
     parser.add_argument("--decay_factor", type=float, default=0.99, help="Decay factor for pheromone")
     parser.add_argument("--pheromone_receptor", type=str, default="false", help="Use pheromone receptor or not")
     parser.add_argument("--collision_threshold", type=float, default=3, help="Collision threshold for agent") 
-    parser.add_argument("--time_constant", type=float, default=200, help="Time constant for optimal time")
+    parser.add_argument("--time_constant", type=float, default=60, help="Time constant for optimal time")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
