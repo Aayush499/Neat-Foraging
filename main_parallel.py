@@ -281,7 +281,7 @@ class ForageTask:
                 #     #reward it proportionally to how close it was to the nest
                 #     dist_to_nest = math.sqrt((self.agent.x - self.nest.x)**2 + (self.agent.y - self.nest.y)**2)
                 #     self.genome.fitness += 10**self.game.milestone*(0.99**( dist_to_nest ))  # assuming max distance is WIDTH/2
-                # break
+                break
         
             
 
@@ -433,7 +433,7 @@ def eval_genome(genome, config):
         forage.genome = genome  # so calculate_fitness can use it
         forage.train_ai(genome, config, draw=False)
         # train_ai will call calculate_fitness and update genome.fitness
-        print(run, end=" ")
+        # print(run, end=" ")
 
     genome.fitness /= NUM_RUNS
     return genome.fitness
@@ -716,12 +716,12 @@ def parser():
     parser.add_argument("--decay_factor", type=float, default=0.99, help="Decay factor for pheromone")
     parser.add_argument("--pheromone_receptor", type=str, default="false", help="Use pheromone receptor or not")
     parser.add_argument("--collision_threshold", type=float, default=3, help="Collision threshold for agent") 
-    parser.add_argument("--time_constant", type=float, default=30, help="Time constant for optimal time")
+    parser.add_argument("--time_constant", type=float, default=60, help="Time constant for optimal time")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
     parser.add_argument('--fitness_criterion', type=str, default='max', help='Fitness criterion to use (mean, max, etc.)')
-    parser.add_argument('--endless', type=str, default='False', help='Run in endless mode or not')
+    parser.add_argument('--endless', type=str, default='true', help='Run in endless mode or not')
     parser.add_argument('--sparse_reward', type=str, default='false', help='Use sparse reward or not')
     parser.add_argument('--stagnation', type=int, default=30, help='Number of generations for stagnation before reset')
     parser.add_argument('--extra_sparse', type=str, default='false', help='Use extra sparse reward or not')
@@ -798,7 +798,7 @@ if __name__ == '__main__':
     nest_receptor = str2bool(args.nest_receptor)
     weight_mutate_power = args.weight_mutate_power
     #NUM runs should be 1 if orientation switching is off, else 10
-    NUM_RUNS = 10 if o_switch else 1
+    NUM_RUNS = 30 if o_switch else 1
     
     # config_filename = 'config-simple'
     default_param = True
