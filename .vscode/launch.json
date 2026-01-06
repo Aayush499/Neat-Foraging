@@ -25,9 +25,11 @@
             // --test true --best aayush_baby_3
             //   "args" : ["--sub", "distance_constrined_test_2", "--test", "true"]
             // "args" : ["--best", "success2", "--test", "true"]
-              "args" : ["--sub", "simple_path"]
+            //   "args" : ["--sub", "simple_path"]
             // "args": ["--genome_dir", "checkpoints/checkpoint-F3-G700-Nrecursive-OSTrue-D0.9-PR_False-CT_5-Time_300-Reward_ExtraSparse-distance_constrined_test_1/best_genomes_by_generation/", "--whole", "true"]
             // "args": ["--genome_dir", "best_networks", "--genome_file" , "success2.pickle"]
+            //testing out a network
+            "args" : ["--best", "checkpoints/checkpoint-F3-G500-Nff-OSTrue-D0.99-PR_True-CT_3-Movement_holonomic-Time_30-Reward_Dense-ff_data_collection_2/best_genomes_by_generation/best_genome_gen_98", "--test", "true", "--pheromone_receptor" , "true"]
         }
     ]
 }

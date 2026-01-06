@@ -10,6 +10,7 @@ from neat.genome import DefaultGenome
 from neat.reproduction import DefaultReproduction
 from neat.stagnation import DefaultStagnation
 from neat.reporting import StdOutReporter
+from neat.reporting import FileReporter
 from neat.species import DefaultSpeciesSet
 from neat.statistics import StatisticsReporter
 from neat.parallel import ParallelEvaluator

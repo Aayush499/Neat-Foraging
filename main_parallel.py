@@ -39,7 +39,7 @@ def generate_prefix():
     if extra_sparse:
         rew = "ExtraSparse"
 
-    s= f"F{particles}-G{generations}-N{network_type}-OS{o_switch}-D{decay_factor}-PR_{pheromone_receptor}-CT_{collision_threshold}-Movement_{movement_type}-Time_{time_constant}-Reward_{rew}-{sub}"
+    s= f"{sub}-F{particles}-G{generations}-N{network_type}-OS{o_switch}-D{decay_factor}-PR_{pheromone_receptor}-CT_{collision_threshold}-Movement_{movement_type}-Time_{time_constant}-Reward_{rew}"
     
     return s
 
@@ -54,7 +54,7 @@ class ForageTask:
                 window = None  # In parallel mode, we won't use any window at all
         global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, decay_factor, arrangement_idx, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor,  discount_factor=0.99)
+        self.game = Game(window, width, height, decay_factor, arrangement_idx, sensor_length, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor,  discount_factor=0.99)
         self.foods = self.game.food_list
         self.agent = self.game.agent
         self.pheromone = self.game.pheromones
@@ -364,7 +364,7 @@ class ForageTask:
         
             waste = max(0.0, self.game.total_distance_travelled - self.game.optimal_distance)
             self.genome.fitness += game_info.score 
-            self.genome.fitness -= lambda_waste * waste
+            # self.genome.fitness -= lambda_waste * waste
 
 
 
@@ -450,11 +450,14 @@ def get_latest_checkpoint(dir_path, pattern_prefix):
 
 
 def run_neat(config):
-    global obstacles, particles, generations, movement_type, network_type, sub, use_checkpoint, endless
+    global obstacles, particles, generations, movement_type, network_type, sub, use_checkpoint, endless, storage_dir
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
     prefix_string = generate_prefix()
     checkpoint_file = ''
+    
     checkpoint_dir = 'checkpoints/'
+    if storage_dir!='':
+        checkpoint_dir = storage_dir + '/'
     # checkpoint_file = 'checkpoints/replication/769'
     
     
@@ -465,6 +468,7 @@ def run_neat(config):
 
     csv_filename = os.path.join(checkpoint_subdir, 'fitness_history.csv')
     csv_filename_bigness = os.path.join(checkpoint_subdir, 'bigness_history.csv')
+    txt_filename_general = os.path.join(checkpoint_subdir, 'general_info.txt')
 
 
 
@@ -499,6 +503,8 @@ def run_neat(config):
     else:
         print("Starting fresh training...")
         p = neat.Population(config)
+    # p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.FileReporter(os.path.join(checkpoint_subdir, "neat_stdout.log"), True))
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
@@ -536,6 +542,11 @@ def run_neat(config):
             for genome in largest_genomes:
                 writer.writerow([genome.key, len(genome.nodes), len(genome.connections)])
 
+
+    
+
+    
+
     # best_genomes = stats.most_fit_genomes
     
     # for gen, genome in enumerate(best_genomes):
@@ -548,6 +559,25 @@ def run_neat(config):
     largest_genomes_over_time = stats.most_big_genomes
     append_fitness_data(best_fitness, avg_fitness)
     append_largeness_data(largest_genomes_over_time)
+
+    with open(txt_filename_general, 'w') as f:
+
+        f.write(f"Network Type: {network_type}\n")
+        f.write(f"Total Generations: {generations}\n")
+        f.write(f"Number of Runs per Genome: {NUM_RUNS}\n")
+        f.write(f"Movement Type: {movement_type}\n")
+        f.write(f"Particles: {particles}\n")
+        f.write(f"Pheromone Receptor: {pheromone_receptor}\n")
+        f.write(f"Collision Threshold: {collision_threshold}\n")
+        f.write(f"Time Constant: {time_constant}\n")
+        f.write(f"Sparse Reward: {SPARSE_REWARD}\n")
+        f.write(f"Extra Sparse Reward: {extra_sparse}\n")
+        f.write(f"Decay Factor: {decay_factor}\n")
+        f.write(f'Discount Factor: {discount_factor}\n')
+        f.write(f"Optimal Distance Constraint: {distance_constraint}\n")
+        f.write(f"Best_fitness_overall: {max(best_fitness)}\n")
+
+
 
     
 
@@ -714,15 +744,15 @@ def parser():
     parser.add_argument("--orientation_switching", type=str, default="true", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
     parser.add_argument("--decay_factor", type=float, default=0.99, help="Decay factor for pheromone")
-    parser.add_argument("--pheromone_receptor", type=str, default="false", help="Use pheromone receptor or not")
+    parser.add_argument("--pheromone_receptor", type=str, default="true", help="Use pheromone receptor or not")
     parser.add_argument("--collision_threshold", type=float, default=3, help="Collision threshold for agent") 
-    parser.add_argument("--time_constant", type=float, default=60, help="Time constant for optimal time")
+    parser.add_argument("--time_constant", type=float, default=200, help="Time constant for optimal time")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
     parser.add_argument('--fitness_criterion', type=str, default='max', help='Fitness criterion to use (mean, max, etc.)')
     parser.add_argument('--endless', type=str, default='true', help='Run in endless mode or not')
-    parser.add_argument('--sparse_reward', type=str, default='false', help='Use sparse reward or not')
+    parser.add_argument('--sparse_reward', type=str, default='true', help='Use sparse reward or not')
     parser.add_argument('--stagnation', type=int, default=30, help='Number of generations for stagnation before reset')
     parser.add_argument('--extra_sparse', type=str, default='false', help='Use extra sparse reward or not')
     parser.add_argument('--carrying_food_receptor', type=str, default='false', help='Use carrying food receptor or not')
@@ -730,15 +760,18 @@ def parser():
     parser.add_argument('--distance_constraint', type=str, default='false', help='Use distance constraint or not')
     parser.add_argument('--parameter_print', action='store_true', default='false', help='Print parameters or not')
     parser.add_argument('--connection_addition_rate', type=float, default=0.2, help='Connection addition rate for NEAT')
-    parser.add_argument('--connection_deletion_rate', type=float, default=0.05, help='Connection deletion rate for NEAT')   
+    parser.add_argument('--connection_deletion_rate', type=float, default=0.1, help='Connection deletion rate for NEAT')   
     parser.add_argument('--node_addition_rate', type=float, default=0.03, help='Node addition rate for NEAT')
     parser.add_argument('--node_deletion_rate', type=float, default=0.01, help='Node deletion rate for NEAT')
     parser.add_argument('--elitism', type=int, default=1, help='Number of elite genomes to carry over each generation')
     parser.add_argument('--initial_connection', type=str, default='full_direct', help='Initial connection type for NEAT (full, partial, etc.)')
     parser.add_argument('--weight_mutate_power', type=float, default=0.3, help='Weight mutation power for NEAT')
     parser.add_argument('--discount_factor', type=float, default=0.99, help='Time bonus multiplier for fitness calculation')
-
+    parser.add_argument('--num_runs', type=int, default=30, help='Number of runs per genome evaluation')
+    parser.add_argument('--sensor_length', type=float, default=40, help='Length of each sensor for the agent')
+    parser.add_argument('--storage_dir', type=str, default='recursive_testing', help='Directory to store data and checkpoints')
     args = parser.parse_args()
+
     return args
     
 
@@ -759,7 +792,7 @@ if __name__ == '__main__':
     args = parser()
     parameter_print = str2bool(args.parameter_print)
     manual_mode = False
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS, distance_constraint, discount_factor
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS, distance_constraint, discount_factor, extra_sparse, connection_addition_rate, connection_deletion_rate, node_addition_rate, node_deletion_rate, elitism, carrying_food_receptor, nest_receptor, weight_mutate_power, sensor_length
     discount_factor = args.discount_factor
     connection_addition_rate = args.connection_addition_rate
     connection_deletion_rate = args.connection_deletion_rate
@@ -798,7 +831,11 @@ if __name__ == '__main__':
     nest_receptor = str2bool(args.nest_receptor)
     weight_mutate_power = args.weight_mutate_power
     #NUM runs should be 1 if orientation switching is off, else 10
-    NUM_RUNS = 30 if o_switch else 1
+    NUM_RUNS =  args.num_runs if o_switch else 1
+    sensor_length = args.sensor_length
+    storage_dir = args.storage_dir
+    if storage_dir != '':
+        os.makedirs(storage_dir, exist_ok=True)
     
     # config_filename = 'config-simple'
     default_param = True
@@ -860,7 +897,7 @@ if __name__ == '__main__':
     cfg['NEAT']['fitness_criterion'] = args.fitness_criterion
 
     if SPARSE_REWARD:
-        cfg['NEAT']['fitness_threshold'] = '1111110'
+        cfg['NEAT']['fitness_threshold'] = '2000000'
         if extra_sparse:
             cfg['NEAT']['fitness_threshold'] = '1'
     else:

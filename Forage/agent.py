@@ -6,7 +6,7 @@ YELLOW = (255, 255, 0)
 
 class Agent:
       
-    def __init__(self, x, y, pheromone_receptor=True, num_sensors=8, carrying_food_receptor=True, nest_receptor=True):
+    def __init__(self, sensor_length, x, y, pheromone_receptor=True, num_sensors=8, carrying_food_receptor=True, nest_receptor=True):
         self.x = self.original_x = x
         self.y = self.original_y = y
         self.sensor_count = num_sensors
@@ -18,7 +18,8 @@ class Agent:
         self.carrying_food = False
         self.radius = 1
         # self.sensor_length = 99
-        self.sensor_length = 16
+        # self.sensor_length = 40
+        self.sensor_length = sensor_length
         self.color = BLUE
        
         self.vel = 3

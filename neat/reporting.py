@@ -159,3 +159,74 @@ class StdOutReporter(BaseReporter):
 
     def info(self, msg):
         print(msg)
+
+
+class FileReporter(BaseReporter):
+    def __init__(self, filename, show_species_detail=False):
+        # self.f = open(filename, "a")
+        self.filename = filename
+        self.show_species_detail = show_species_detail
+        self.generation = None
+        self.generation_start_time = None
+        self.generation_times = []
+        self.num_extinctions = 0
+
+    def _log(self, msg):
+        with open(self.filename, "a") as f:
+            f.write(msg + "\n")
+            f.flush()
+        
+
+    def start_generation(self, generation):
+        self.generation = generation
+        self._log(f"\n ****** Running generation {generation} ******\n")
+        self.generation_start_time = time.time()
+
+    def end_generation(self, config, population, species_set):
+        ng = len(population)
+        ns = len(species_set.species)
+        if self.show_species_detail:
+            self._log(f"Population of {ng} members in {ns} species:")
+            # (copy the formatting logic from StdOutReporter, but use self._log)
+        else:
+            self._log(f"Population of {ng} members in {ns} species")
+        # timing info
+        elapsed = time.time() - self.generation_start_time
+        self.generation_times.append(elapsed)
+        self.generation_times = self.generation_times[-10:]
+        average = sum(self.generation_times) / len(self.generation_times)
+        self._log(f"Total extinctions: {self.num_extinctions}")
+        if len(self.generation_times) > 1:
+            self._log(f"Generation time: {elapsed:.3f} sec ({average:.3f} average)")
+        else:
+            self._log(f"Generation time: {elapsed:.3f} sec")
+
+    def post_evaluate(self, config, population, species, best_genome):
+        fitnesses = [g.fitness for g in itervalues(population)]
+        fit_mean = mean(fitnesses)
+        fit_std = stdev(fitnesses)
+        best_species_id = species.get_species_id(best_genome.key)
+        self._log(f"Population's average fitness: {fit_mean:3.5f} stdev: {fit_std:3.5f}")
+        self._log(
+            f"Best fitness: {best_genome.fitness:3.5f} - size: {best_genome.size()} "
+            f"- species {best_species_id} - id {best_genome.key}"
+        )
+
+    def complete_extinction(self):
+        self.num_extinctions += 1
+        self._log("All species extinct.")
+
+    def found_solution(self, config, generation, best):
+        self._log(
+            f"\nBest individual in generation {self.generation} meets fitness threshold "
+            f"- complexity: {best.size()}"
+        )
+
+    def species_stagnant(self, sid, species):
+        if self.show_species_detail:
+            self._log(
+                f"\nSpecies {sid} with {len(species.members)} members is stagnated: removing it"
+            )
+
+    def info(self, msg):
+        self._log(msg)

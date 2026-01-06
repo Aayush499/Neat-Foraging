@@ -1,8 +1,8 @@
 [NEAT]
 ; fitness_criterion     = max
 ; fitness_threshold     = 1
-pop_size              =  600
-reset_on_extinction   = False
+pop_size              =  200
+reset_on_extinction   = True
 [DefaultGenome]
 # node activation options
 activation_default      = tanh
