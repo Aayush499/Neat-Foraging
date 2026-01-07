@@ -54,7 +54,7 @@ class ForageTask:
                 window = None  # In parallel mode, we won't use any window at all
         global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, decay_factor, arrangement_idx, sensor_length, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor,  discount_factor=0.99)
+        self.game = Game(window, width, height, decay_factor, arrangement_idx, sensor_length, NUM_RUNS, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor,  discount_factor=0.99)
         self.foods = self.game.food_list
         self.agent = self.game.agent
         self.pheromone = self.game.pheromones
@@ -751,7 +751,7 @@ def parser():
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
     parser.add_argument('--fitness_criterion', type=str, default='max', help='Fitness criterion to use (mean, max, etc.)')
-    parser.add_argument('--endless', type=str, default='true', help='Run in endless mode or not')
+    parser.add_argument('--endless', type=str, default='false', help='Run in endless mode or not')
     parser.add_argument('--sparse_reward', type=str, default='true', help='Use sparse reward or not')
     parser.add_argument('--stagnation', type=int, default=30, help='Number of generations for stagnation before reset')
     parser.add_argument('--extra_sparse', type=str, default='false', help='Use extra sparse reward or not')
@@ -759,17 +759,17 @@ def parser():
     parser.add_argument('--nest_receptor', type=str, default='false', help='Use nest receptor or not')
     parser.add_argument('--distance_constraint', type=str, default='false', help='Use distance constraint or not')
     parser.add_argument('--parameter_print', action='store_true', default='false', help='Print parameters or not')
-    parser.add_argument('--connection_addition_rate', type=float, default=0.2, help='Connection addition rate for NEAT')
+    parser.add_argument('--connection_addition_rate', type=float, default=0.5   , help='Connection addition rate for NEAT')
     parser.add_argument('--connection_deletion_rate', type=float, default=0.1, help='Connection deletion rate for NEAT')   
-    parser.add_argument('--node_addition_rate', type=float, default=0.03, help='Node addition rate for NEAT')
-    parser.add_argument('--node_deletion_rate', type=float, default=0.01, help='Node deletion rate for NEAT')
+    parser.add_argument('--node_addition_rate', type=float, default=0.5, help='Node addition rate for NEAT')
+    parser.add_argument('--node_deletion_rate', type=float, default=0.05, help='Node deletion rate for NEAT')
     parser.add_argument('--elitism', type=int, default=1, help='Number of elite genomes to carry over each generation')
-    parser.add_argument('--initial_connection', type=str, default='full_direct', help='Initial connection type for NEAT (full, partial, etc.)')
+    parser.add_argument('--initial_connection', type=str, default='partial_direct 0.3', help='Initial connection type for NEAT (full, partial, etc.)')
     parser.add_argument('--weight_mutate_power', type=float, default=0.3, help='Weight mutation power for NEAT')
     parser.add_argument('--discount_factor', type=float, default=0.99, help='Time bonus multiplier for fitness calculation')
     parser.add_argument('--num_runs', type=int, default=30, help='Number of runs per genome evaluation')
     parser.add_argument('--sensor_length', type=float, default=40, help='Length of each sensor for the agent')
-    parser.add_argument('--storage_dir', type=str, default='recursive_testing', help='Directory to store data and checkpoints')
+    parser.add_argument('--storage_dir', type=str, default='ping/pong', help='Directory to store data and checkpoints')
     args = parser.parse_args()
 
     return args
@@ -897,7 +897,7 @@ if __name__ == '__main__':
     cfg['NEAT']['fitness_criterion'] = args.fitness_criterion
 
     if SPARSE_REWARD:
-        cfg['NEAT']['fitness_threshold'] = '2000000'
+        cfg['NEAT']['fitness_threshold'] = '729000000'
         if extra_sparse:
             cfg['NEAT']['fitness_threshold'] = '1'
     else:

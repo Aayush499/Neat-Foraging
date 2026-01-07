@@ -1,0 +1,113 @@
+
+ ****** Running generation 0 ******
+
+Population's average fitness: 20.35438 stdev: 236.39342
+Best fitness: 3337.99000 - size: (16, 96) - species 56 - id 56
+Average adjusted fitness: 0.006
+Mean genetic distance 3.368, standard deviation 0.234
+Population of 434 members in 200 species:
+Total extinctions: 0
+Generation time: 73.232 sec
+
+ ****** Running generation 1 ******
+
+Population's average fitness: 71.82005 stdev: 932.90319
+Best fitness: 17600.19967 - size: (16, 91) - species 112 - id 280
+Average adjusted fitness: 0.003
+Mean genetic distance 3.355, standard deviation 0.243
+Population of 439 members in 200 species:
+Total extinctions: 0
+Generation time: 169.405 sec (121.319 average)
+
+ ****** Running generation 2 ******
+
+Population's average fitness: 177.84415 stdev: 2407.00434
+Best fitness: 46729.68734 - size: (17, 97) - species 70 - id 619
+Average adjusted fitness: 0.003
+Mean genetic distance 3.354, standard deviation 0.243
+Population of 439 members in 200 species:
+Total extinctions: 0
+Generation time: 169.117 sec (137.252 average)
+
+ ****** Running generation 3 ******
+
+Population's average fitness: 221.09870 stdev: 2483.57515
+Best fitness: 46729.68734 - size: (17, 97) - species 70 - id 619
+Average adjusted fitness: 0.001
+Mean genetic distance 3.350, standard deviation 0.239
+Population of 436 members in 200 species:
+Total extinctions: 0
+Generation time: 172.451 sec (146.051 average)
+
+ ****** Running generation 4 ******
+
+Population's average fitness: 454.58513 stdev: 5868.20539
+Best fitness: 111670.01986 - size: (17, 91) - species 112 - id 1128
+Average adjusted fitness: 0.001
+Mean genetic distance 3.347, standard deviation 0.243
+Population of 437 members in 200 species:
+Total extinctions: 0
+Generation time: 173.413 sec (151.524 average)
+
+ ****** Running generation 5 ******
+
+Population's average fitness: 496.78685 stdev: 5905.68522
+Best fitness: 111670.01986 - size: (17, 91) - species 112 - id 1128
+Average adjusted fitness: 0.001
+Mean genetic distance 3.351, standard deviation 0.240
+Population of 435 members in 200 species:
+Total extinctions: 0
+Generation time: 175.354 sec (155.495 average)
+
+ ****** Running generation 6 ******
+
+Population's average fitness: 88848.27861 stdev: 1841583.23658
+Best fitness: 38453744.52164 - size: (20, 102) - species 91 - id 1567
+Average adjusted fitness: 0.003
+Mean genetic distance 3.339, standard deviation 0.246
+Population of 439 members in 200 species:
+Total extinctions: 0
+Generation time: 177.976 sec (158.707 average)
+
+ ****** Running generation 7 ******
+
+Population's average fitness: 129121.57368 stdev: 2023221.55172
+Best fitness: 38453744.52164 - size: (20, 102) - species 91 - id 1567
+Average adjusted fitness: 0.000
+Mean genetic distance 3.334, standard deviation 0.247
+Population of 443 members in 200 species:
+Total extinctions: 0
+Generation time: 168.593 sec (159.943 average)
+
+ ****** Running generation 8 ******
+
+Population's average fitness: 128832.73922 stdev: 2017677.54555
+Best fitness: 38453744.52164 - size: (20, 102) - species 91 - id 1567
+Average adjusted fitness: 0.000
+Mean genetic distance 3.334, standard deviation 0.249
+Population of 442 members in 200 species:
+Total extinctions: 0
+Generation time: 178.690 sec (162.026 average)
+
+ ****** Running generation 9 ******
+
+Population's average fitness: 88806.80273 stdev: 1827125.30420
+Best fitness: 38453744.52164 - size: (20, 102) - species 91 - id 1567
+Average adjusted fitness: 0.000
+Mean genetic distance 3.334, standard deviation 0.250
+Population of 442 members in 200 species:
+Total extinctions: 0
+Generation time: 178.732 sec (163.696 average)
+
+ ****** Running generation 10 ******
+
+Population's average fitness: 87454.23744 stdev: 1826975.41686
+Best fitness: 38453744.52164 - size: (20, 102) - species 91 - id 1567
+Average adjusted fitness: 0.000
+Mean genetic distance 3.339, standard deviation 0.242
+Population of 442 members in 200 species:
+Total extinctions: 0
+Generation time: 175.510 sec (173.924 average)
+
+ ****** Running generation 11 ******
+

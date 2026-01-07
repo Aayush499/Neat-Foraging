@@ -672,7 +672,7 @@ def parser():
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
     parser.add_argument("--generations", type=int, default=500, help="Number of generations")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement")                   
-    parser.add_argument("--network", type=str, default="ff", help="Type of neural network")
+    parser.add_argument("--network", type=str, default="recursive", help="Type of neural network")
     parser.add_argument("--test", type=str, default="False", help="Test the best network after training")
     parser.add_argument("--sub", type=str, default="0", help="Sub title for multiple runs")
     parser.add_argument("--ricochet", type=str, default="False", help="Ricochet off walls or not")
@@ -684,7 +684,7 @@ def parser():
     parser.add_argument("--decay_factor", type=float, default=0.99, help="Decay factor for pheromone")
     parser.add_argument("--pheromone_receptor", type=str, default="true", help="Use pheromone receptor or not")
     parser.add_argument("--collision_threshold", type=float, default=3, help="Collision threshold for agent") 
-    parser.add_argument("--time_constant", type=float, default=300, help="Time constant for optimal time")
+    parser.add_argument("--time_constant", type=float, default=200, help="Time constant for optimal time")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
     parser.add_argument('--num_sensors', type=int, default=8, help='Number of sensors for the agent')
     parser.add_argument('--food_calibration', type=str, default='True', help='calibrate distance of food based on collision threshold')
@@ -697,16 +697,19 @@ def parser():
     parser.add_argument('--nest_receptor', type=str, default='false', help='Use nest receptor or not')
     parser.add_argument('--distance_constraint', type=str, default='false', help='Use distance constraint or not')
     parser.add_argument('--parameter_print', action='store_true', default='false', help='Print parameters or not')
-    parser.add_argument('--connection_addition_rate', type=float, default=0.9, help='Connection addition rate for NEAT')
-    parser.add_argument('--connection_deletion_rate', type=float, default=0.2, help='Connection deletion rate for NEAT')   
-    parser.add_argument('--node_addition_rate', type=float, default=0.9, help='Node addition rate for NEAT')
-    parser.add_argument('--node_deletion_rate', type=float, default=0.2, help='Node deletion rate for NEAT')
+    parser.add_argument('--connection_addition_rate', type=float, default=0.2, help='Connection addition rate for NEAT')
+    parser.add_argument('--connection_deletion_rate', type=float, default=0.1, help='Connection deletion rate for NEAT')   
+    parser.add_argument('--node_addition_rate', type=float, default=0.03, help='Node addition rate for NEAT')
+    parser.add_argument('--node_deletion_rate', type=float, default=0.01, help='Node deletion rate for NEAT')
     parser.add_argument('--elitism', type=int, default=1, help='Number of elite genomes to carry over each generation')
     parser.add_argument('--initial_connection', type=str, default='full_direct', help='Initial connection type for NEAT (full, partial, etc.)')
     parser.add_argument('--weight_mutate_power', type=float, default=0.3, help='Weight mutation power for NEAT')
     parser.add_argument('--discount_factor', type=float, default=0.99, help='Time bonus multiplier for fitness calculation')
-
+    parser.add_argument('--num_runs', type=int, default=30, help='Number of runs per genome evaluation')
+    parser.add_argument('--sensor_length', type=float, default=40, help='Length of each sensor for the agent')
+    parser.add_argument('--storage_dir', type=str, default='recursive_testing', help='Directory to store data and checkpoints')
     args = parser.parse_args()
+
     return args
     
 

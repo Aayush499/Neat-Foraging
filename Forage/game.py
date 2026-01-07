@@ -35,10 +35,10 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, decay_factor, arrangement_idx, sensor_length,  obstacles , particles , ricochet, obstacle_type, seeded, o_switch, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic", carrying_food_receptor=True, nest_receptor=True):
+    def __init__(self, window, window_width, window_height, decay_factor, arrangement_idx, sensor_length, NUM_RUNS, obstacles , particles , ricochet, obstacle_type, seeded, o_switch, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic", carrying_food_receptor=True, nest_receptor=True):
          
       
-        
+        self.NUM_RUNS = NUM_RUNS
         
         self.teleport = teleport
         self.window_width = window_width
@@ -265,9 +265,9 @@ class Game:
                             
                             # self.score += 100 * (self.discount_factor ** self.searching_time) + self.food_collected*30*(self.discount_factor ** self.searching_time)
                             # self.score += 10**(self.milestone) * (self.discount_factor ** self.searching_time) 
-                            self.score += 10 * (self.discount_factor ** self.searching_time) 
+                            self.score += self.NUM_RUNS * (self.discount_factor ** self.searching_time) 
                         else:
-                            self.score += 10**(self.milestone)* (self.discount_factor ** self.searching_time) 
+                            self.score += self.NUM_RUNS**(self.milestone)* (self.discount_factor ** self.searching_time) 
                         if milestone:
                             self.milestone += 1
                     
@@ -288,9 +288,9 @@ class Game:
                 if not self.sparse:
                     # self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
                     # self.score += 10**(self.milestone) * (self.discount_factor ** self.carry_time)
-                    self.score += 150 * (self.discount_factor ** self.carry_time)
+                    self.score += self.NUM_RUNS * (self.discount_factor ** self.carry_time)
                 else:
-                    self.score +=  10**(self.milestone)* (self.discount_factor ** self.searching_time) 
+                    self.score +=  self.NUM_RUNS**(self.milestone)* (self.discount_factor ** self.searching_time) 
                 if milestone:
                     self.milestone += 1
                 self.food_collected += 1   
