@@ -1,0 +1,14 @@
+Network Type: recursive
+Total Generations: 500
+Number of Runs per Genome: 30
+Movement Type: holonomic
+Particles: 3
+Pheromone Receptor: True
+Collision Threshold: 3
+Time Constant: 200.0
+Sparse Reward: True
+Extra Sparse Reward: False
+Decay Factor: 0.99
+Discount Factor: 0.99
+Optimal Distance Constraint: False
+Best_fitness_overall: 111819645.65049306

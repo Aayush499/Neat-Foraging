@@ -21,6 +21,7 @@ from neat.parallel import ParallelEvaluator
 SIMPLE = False
 PARALLEL = True
 n_workers = int(os.environ.get("SLURM_CPUS_PER_TASK", "4"))
+
 MAX_PLATEAU = 20  # Generations to wait before reset; adjust as needed
 # chosen_arrangement = [True] *18
 # chosen_arrangement[6] = True
@@ -54,7 +55,7 @@ class ForageTask:
                 window = None  # In parallel mode, we won't use any window at all
         global obstacles, particles, movement_type, ricochet, obstacle_type
 
-        self.game = Game(window, width, height, decay_factor, arrangement_idx, sensor_length, NUM_RUNS, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor,  discount_factor=0.99)
+        self.game = Game(dist_penalty,window, width, height, decay_factor, arrangement_idx, sensor_length, NUM_RUNS, obstacles=obstacles, particles=particles, ricochet=ricochet, obstacle_type=obstacle_type, seeded=seeded, o_switch=o_switch, pheromone_receptor=pheromone_receptor, collision_threshold=collision_threshold, time_constant=time_constant, teleport=teleport, num_sensors=num_sensors, food_calibration=food_calibration, sparse = SPARSE_REWARD, movement_type= movement_type, carrying_food_receptor=carrying_food_receptor, nest_receptor= nest_receptor,  discount_factor=0.99)
         self.foods = self.game.food_list
         self.agent = self.game.agent
         self.pheromone = self.game.pheromones
@@ -161,11 +162,12 @@ class ForageTask:
 
     #         pygame.display.update()
     def test_ai(self, net, frame_dir='video_frames', global_frame=0):
+        global accumulated_test_fitness
         clock = pygame.time.Clock()
 
         run = True
         steps = 0
-        while run and self.game.food_collected < self.game.total_food and steps < self.game.optimalTime:
+        while run  :
             clock.tick(60)
             game_info = self.game.loop()
             for event in pygame.event.get():
@@ -205,7 +207,8 @@ class ForageTask:
             total_distance = self.game.total_distance_travelled
 
             if self.game.optimalTime <= steps or game_info.food_collected >= game_info.total_food  or (distance_constraint and total_distance > self.game.optimal_distance) :
-           
+                print(f"score: {game_info.score}")
+                accumulated_test_fitness += game_info.score
                 break
             steps += 1
 
@@ -672,7 +675,8 @@ def create_video_from_frames(frame_dir, output_filename, framerate=30):
     subprocess.run(ffmpeg_cmd, check=True)
 
 def test_best_network(config):
-    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, best_file
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, best_file, accumulated_test_fitness
+    accumulated_test_fitness = 0
     prefix_string = generate_prefix()
     frame_dir = f'video_dir/{prefix_string}_frames'
     postfix = '.pickle'
@@ -703,7 +707,8 @@ def test_best_network(config):
         winner = pickle.load(f)
 
     global_frame = 0  # NEW: global frame counter
-
+    # fitness =0
+    # accumulated = fitness
     for i in range(NUM_RUNS):
         # if not chosen_arrangement[i]:
         #     continue
@@ -717,9 +722,14 @@ def test_best_network(config):
         win = pygame.display.set_mode((width, height))
         pygame.display.set_caption("Forage")
         foragetask = ForageTask(win, width, height, arrangement_idx=i)
-
+        print(f"Test Run {i+1}/{NUM_RUNS}", end=" ")
         # Pass the global_frame **by reference** & get back updated value
         global_frame = foragetask.test_ai(winner_net, frame_dir=frame_dir, global_frame=global_frame)
+        # fitness += foragetask.game.game_info.score
+        # print(fitness)
+        # accumulated += fitness
+        
+    print("Average Fitness over test runs:", accumulated_test_fitness / NUM_RUNS)
 
     video_name = f"{prefix_string}.mp4"
     output_path = os.path.join("video_dir", video_name)
@@ -734,7 +744,7 @@ def parser():
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
     parser.add_argument("--generations", type=int, default=500, help="Number of generations")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement")                   
-    parser.add_argument("--network", type=str, default="recursive", help="Type of neural network")
+    parser.add_argument("--network", type=str, default="ff", help="Type of neural network")
     parser.add_argument("--test", type=str, default="False", help="Test the best network after training")
     parser.add_argument("--sub", type=str, default="0", help="Sub title for multiple runs")
     parser.add_argument("--ricochet", type=str, default="False", help="Ricochet off walls or not")
@@ -770,6 +780,7 @@ def parser():
     parser.add_argument('--num_runs', type=int, default=30, help='Number of runs per genome evaluation')
     parser.add_argument('--sensor_length', type=float, default=40, help='Length of each sensor for the agent')
     parser.add_argument('--storage_dir', type=str, default='ping/pong', help='Directory to store data and checkpoints')
+    parser.add_argument('--dist_penalty', type=str, default='false', help='Apply distance penalty or not')
     args = parser.parse_args()
 
     return args
@@ -792,7 +803,8 @@ if __name__ == '__main__':
     args = parser()
     parameter_print = str2bool(args.parameter_print)
     manual_mode = False
-    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS, distance_constraint, discount_factor, extra_sparse, connection_addition_rate, connection_deletion_rate, node_addition_rate, node_deletion_rate, elitism, carrying_food_receptor, nest_receptor, weight_mutate_power, sensor_length
+    global obstacles, particles, generations, movement_type, network_type, sub, best_file, ricochet, obstacle_type, seeded, o_switch, use_checkpoint, decay_factor, pheromone_receptor, collision_threshold, time_constant, teleport, num_sensors, fitness_criterion, food_calibration, endless, SPARSE_REWARD, stagnation, NUM_RUNS, distance_constraint, discount_factor, extra_sparse, connection_addition_rate, connection_deletion_rate, node_addition_rate, node_deletion_rate, elitism, carrying_food_receptor, nest_receptor, weight_mutate_power, sensor_length, dist_penalty
+    dist_penalty = str2bool(args.dist_penalty)
     discount_factor = args.discount_factor
     connection_addition_rate = args.connection_addition_rate
     connection_deletion_rate = args.connection_deletion_rate

@@ -35,9 +35,10 @@ class Game:
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height, decay_factor, arrangement_idx, sensor_length, NUM_RUNS, obstacles , particles , ricochet, obstacle_type, seeded, o_switch, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic", carrying_food_receptor=True, nest_receptor=True):
+    def __init__(self, dist_penalty,window, window_width, window_height, decay_factor, arrangement_idx, sensor_length, NUM_RUNS, obstacles , particles , ricochet, obstacle_type, seeded, o_switch, discount_factor = 0.99, pheromone_receptor=True, collision_threshold=7.0, time_constant=200.0, time_bonus_multiplier=1.0,  teleport=False, num_sensors=8, food_calibration=True, sparse = False, movement_type="holonomic", carrying_food_receptor=True, nest_receptor=True):
          
       
+        self.dist_penalty = dist_penalty
         self.NUM_RUNS = NUM_RUNS
         
         self.teleport = teleport
@@ -203,6 +204,8 @@ class Game:
         self.path_reward = 20.0      # tune as needed
         self.path_radius = self.collision_threshold * 1.5
 
+        self.current_milestone_distance_checkpoint= 0
+
          
     def _current_path_target(self):
         if self.current_milestone_idx >= len(self.path_milestones):
@@ -260,6 +263,7 @@ class Game:
                 if dist <= collision_threshold :
                     # small reward for picking up food
                     # calculate the score based on how quickly the agent picks up the food
+                    searching_distance = self.total_distance_travelled - self.current_milestone_distance_checkpoint
                     if self.movement_type != "1d":
                         if not self.sparse :
                             
@@ -267,7 +271,10 @@ class Game:
                             # self.score += 10**(self.milestone) * (self.discount_factor ** self.searching_time) 
                             self.score += self.NUM_RUNS * (self.discount_factor ** self.searching_time) 
                         else:
-                            self.score += self.NUM_RUNS**(self.milestone)* (self.discount_factor ** self.searching_time) 
+                            if self.dist_penalty:
+                                self.score +=  self.NUM_RUNS**(self.milestone)* (self.discount_factor ** searching_distance)
+                            else: 
+                                self.score += self.NUM_RUNS**(self.milestone)* (self.discount_factor ** self.searching_time) 
                         if milestone:
                             self.milestone += 1
                     
@@ -276,6 +283,7 @@ class Game:
                         self.agent.y = food.y
                     agent.carrying_food = True
                     self.carry_time = 0
+                    self.current_milestone_distance_checkpoint = self.total_distance_travelled
                     self.food_list.remove(food)
                     
                     break   
@@ -285,12 +293,16 @@ class Game:
             dist = ((agent.x - nest.x) ** 2 + (agent.y - nest.y) ** 2) ** 0.5
             # if dist < agent.radius + nest.radius:
             if dist <= collision_threshold :
+                carrying_distance = self.total_distance_travelled - self.current_milestone_distance_checkpoint
                 if not self.sparse:
                     # self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
                     # self.score += 10**(self.milestone) * (self.discount_factor ** self.carry_time)
                     self.score += self.NUM_RUNS * (self.discount_factor ** self.carry_time)
                 else:
-                    self.score +=  self.NUM_RUNS**(self.milestone)* (self.discount_factor ** self.searching_time) 
+                    if self.dist_penalty:
+                        self.score +=  self.NUM_RUNS**(self.milestone)* (self.discount_factor ** carrying_distance) 
+                    else:
+                        self.score +=  self.NUM_RUNS**(self.milestone)* (self.discount_factor ** self.carry_time) 
                 if milestone:
                     self.milestone += 1
                 self.food_collected += 1   
@@ -300,6 +312,7 @@ class Game:
                 #remove all pheromones when food is delivered to nest
                 # self.pheromones = []
                 self.searching_time = 0
+                self.current_milestone_distance_checkpoint = self.total_distance_travelled
                 # self.optimalTime += self.time_constant*2
                 self.optimalTime += self.time_constant*(self.food_collected+1)*(self.food_collected+2)
                 self.optimal_distance = self.distance_constant*(self.food_collected+1)*(self.food_collected+2)
