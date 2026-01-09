@@ -675,10 +675,13 @@ def create_video_from_frames(frame_dir, output_filename, framerate=30):
     subprocess.run(ffmpeg_cmd, check=True)
 
 def test_best_network(config):
-    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, best_file, accumulated_test_fitness
+    global obstacles, particles, generations, movement_type, network_type, sub, ricochet, best_file, accumulated_test_fitness, storage_dir
     accumulated_test_fitness = 0
     prefix_string = generate_prefix()
-    frame_dir = f'video_dir/{prefix_string}_frames'
+    if storage_dir == '':
+        frame_dir = f"video_dir/{prefix_string}_frames"
+    else:
+        frame_dir = f"{storage_dir}/video_dir/{prefix_string}_frames"
     postfix = '.pickle'
     # os.makedirs(frame_dir, exist_ok=True)
     #make directory if it doesn't exist, if it exists, delete all files in it
@@ -744,7 +747,7 @@ def parser():
     parser.add_argument("--obstacles", type=str, default="False", help="Use obstacles or not")
     parser.add_argument("--generations", type=int, default=500, help="Number of generations")
     parser.add_argument("--movement_type", type=str, default="holonomic", help="Type of agent movement")                   
-    parser.add_argument("--network", type=str, default="ff", help="Type of neural network")
+    parser.add_argument("--network", type=str, default="recursive", help="Type of neural network")
     parser.add_argument("--test", type=str, default="False", help="Test the best network after training")
     parser.add_argument("--sub", type=str, default="0", help="Sub title for multiple runs")
     parser.add_argument("--ricochet", type=str, default="False", help="Ricochet off walls or not")
@@ -754,7 +757,7 @@ def parser():
     parser.add_argument("--orientation_switching", type=str, default="true", help="Use orientation switching or not")
     parser.add_argument("--use_checkpoint", type=str, default="", help="Use checkpoint or not")
     parser.add_argument("--decay_factor", type=float, default=0.99, help="Decay factor for pheromone")
-    parser.add_argument("--pheromone_receptor", type=str, default="true", help="Use pheromone receptor or not")
+    parser.add_argument("--pheromone_receptor", type=str, default="false", help="Use pheromone receptor or not")
     parser.add_argument("--collision_threshold", type=float, default=3, help="Collision threshold for agent") 
     parser.add_argument("--time_constant", type=float, default=200, help="Time constant for optimal time")
     parser.add_argument("--teleport", type=str, default="False", help="Use teleporting or not")
@@ -780,7 +783,7 @@ def parser():
     parser.add_argument('--num_runs', type=int, default=30, help='Number of runs per genome evaluation')
     parser.add_argument('--sensor_length', type=float, default=40, help='Length of each sensor for the agent')
     parser.add_argument('--storage_dir', type=str, default='ping/pong', help='Directory to store data and checkpoints')
-    parser.add_argument('--dist_penalty', type=str, default='false', help='Apply distance penalty or not')
+    parser.add_argument('--dist_penalty', type=str, default='true', help='Apply distance penalty or not')
     args = parser.parse_args()
 
     return args

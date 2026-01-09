@@ -80,8 +80,9 @@ class Game:
         food_dist = self.agent.sensor_length - (collision_threshold+2) if food_calibration else self.agent.sensor_length
         first_chk = True
         food_placed = False
-        dist = self.agent.sensor_length
+        # dist = self.agent.sensor_length
         # dist = 30
+        dist = food_dist
 
         radial_arrangement = False
         for f in range(self.total_food):
@@ -269,7 +270,10 @@ class Game:
                             
                             # self.score += 100 * (self.discount_factor ** self.searching_time) + self.food_collected*30*(self.discount_factor ** self.searching_time)
                             # self.score += 10**(self.milestone) * (self.discount_factor ** self.searching_time) 
-                            self.score += self.NUM_RUNS * (self.discount_factor ** self.searching_time) 
+                            if self.dist_penalty:
+                                self.score +=  self.NUM_RUNS*(self.discount_factor ** searching_distance)
+                            else:
+                                self.score += self.NUM_RUNS * (self.discount_factor ** self.searching_time) 
                         else:
                             if self.dist_penalty:
                                 self.score +=  self.NUM_RUNS**(self.milestone)* (self.discount_factor ** searching_distance)
@@ -297,7 +301,10 @@ class Game:
                 if not self.sparse:
                     # self.score += 150 * (self.discount_factor ** self.carry_time) + self.food_collected*200*(self.discount_factor ** self.carry_time)
                     # self.score += 10**(self.milestone) * (self.discount_factor ** self.carry_time)
-                    self.score += self.NUM_RUNS * (self.discount_factor ** self.carry_time)
+                    if self.dist_penalty:
+                        self.score +=  self.NUM_RUNS* (self.discount_factor ** carrying_distance)
+                    else:
+                        self.score += self.NUM_RUNS * (self.discount_factor ** self.carry_time)
                 else:
                     if self.dist_penalty:
                         self.score +=  self.NUM_RUNS**(self.milestone)* (self.discount_factor ** carrying_distance) 

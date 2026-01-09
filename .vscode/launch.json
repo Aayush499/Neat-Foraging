@@ -29,7 +29,7 @@
             // "args": ["--genome_dir", "checkpoints/checkpoint-F3-G700-Nrecursive-OSTrue-D0.9-PR_False-CT_5-Time_300-Reward_ExtraSparse-distance_constrined_test_1/best_genomes_by_generation/", "--whole", "true"]
             // "args": ["--genome_dir", "best_networks", "--genome_file" , "success2.pickle"]
             //testing out a network
-            "args" : ["--best", "baseline2/ff_dropper/checkpoint-ff_drop_1-F3-G500-Nff-OSTrue-D0.99-PR_True-CT_3-Movement_holonomic-Time_200.0-Reward_Sparse/best_genomes_by_generation/best_genome_gen_209", "--test", "true" ]
+            "args" : ["--best", "baseline3_dist_penalty/recursive_no_drop/checkpoint-rec_no_drop_1-F3-G500-Nrecursive-OSTrue-D0.99-PR_False-CT_3-Movement_holonomic-Time_200.0-Reward_Sparse/best_genomes_by_generation/best_genome_gen_318", "--test", "true" ]
         }
     ]
 }
