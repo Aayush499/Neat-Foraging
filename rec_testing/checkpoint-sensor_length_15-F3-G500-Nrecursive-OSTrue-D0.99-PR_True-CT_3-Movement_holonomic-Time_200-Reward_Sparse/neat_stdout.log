@@ -1,0 +1,13 @@
+
+ ****** Running generation 0 ******
+
+Population's average fitness: 0.62342 stdev: 0.85677
+Best fitness: 4.89561 - size: (16, 320) - species 180 - id 180
+Average adjusted fitness: 0.127
+Mean genetic distance 3.202, standard deviation 0.224
+Population of 400 members in 200 species:
+Total extinctions: 0
+Generation time: 57.942 sec
+
+ ****** Running generation 1 ******
+

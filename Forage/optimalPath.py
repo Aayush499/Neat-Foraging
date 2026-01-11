@@ -20,3 +20,23 @@ def bestPath(edges, root):
 
     #return the sum of all the depths
     return sum(depths.values())
+
+def bestPathPerNode(edges, root):
+    from collections import defaultdict, deque
+
+    tree = defaultdict(list)
+    for u, v in edges:
+        tree[u].append(v)
+        tree[v].append(u)
+
+    depths = {root: 0}
+    queue = deque([root])
+
+    while queue:
+        node = queue.popleft()
+        for neighbor in tree[node]:
+            if neighbor not in depths:
+                depths[neighbor] = depths[node] + 1
+                queue.append(neighbor)
+
+    return depths  # returns dict: {node_position: depth}

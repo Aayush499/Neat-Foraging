@@ -6,12 +6,8 @@
 - # Cool things 
     That quadratic technique is actually kinda clever for detecting colissions
 
-
-- Life Questions:
-
-    - How impactful is this work really?
-    - Are there other people interested in this?
-    - Should this be my thesis? Shouldn't I aim for something even more impactful. An even harder problem.
+ 
+ 
 
 # Encoding
 - Is there a way that I can encode certain relationships into integers?
